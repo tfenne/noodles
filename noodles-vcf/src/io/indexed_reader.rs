@@ -43,6 +43,11 @@ impl<R> IndexedReader<R>
 where
     R: BufRead,
 {
+    /// Returns a VCF header reader.
+    pub fn header_reader(&mut self) -> super::reader::header::Reader<&mut R> {
+        self.inner.header_reader()
+    }
+
     /// Reads the VCF header.
     pub fn read_header(&mut self) -> io::Result<Header> {
         self.inner.read_header()

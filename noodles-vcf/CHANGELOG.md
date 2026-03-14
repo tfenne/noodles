@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+  * vcf/io/indexed_reader: Add `IndexedReader::header_reader`.
+
 ## 0.86.0 - 2026-03-13
 
 ### Fixed
