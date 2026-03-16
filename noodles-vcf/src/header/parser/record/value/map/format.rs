@@ -40,8 +40,8 @@ impl ParseError {
         Self { id, kind }
     }
 
-    pub(crate) fn id(&self) -> Option<&String> {
-        self.id.as_ref()
+    pub(crate) fn id(&self) -> Option<&str> {
+        self.id.as_deref()
     }
 }
 
