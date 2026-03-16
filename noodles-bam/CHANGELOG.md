@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+  * bam/io/indexed_reader: Add `IndexedReader::header_reader`.
+
 ## 0.87.0 - 2026-03-13
 
 ### Fixed
