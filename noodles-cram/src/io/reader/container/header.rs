@@ -64,7 +64,7 @@ where
         reference_sequence_id,
         alignment_start,
         header.block_count,
-        expected_crc32,
+        actual_crc32,
     ) {
         Ok(0)
     } else {
