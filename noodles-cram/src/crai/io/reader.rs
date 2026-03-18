@@ -1,7 +1,10 @@
+mod record;
+
 use std::io::{self, BufRead, BufReader, Read};
 
 use flate2::read::GzDecoder;
 
+pub(crate) use self::record::parse_record;
 use crate::crai::Index;
 
 /// A CRAM index reader.
@@ -51,8 +54,7 @@ where
             match read_line(&mut self.inner, &mut buf) {
                 Ok(0) => break,
                 Ok(_) => {
-                    let record = buf
-                        .parse()
+                    let record = parse_record(&buf)
                         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
                     index.push(record);
