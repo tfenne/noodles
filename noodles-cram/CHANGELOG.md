@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+  * cram/crai/io/reader: Add record reader (`Reader::read_record`).
+
 ## 0.91.0 - 2026-03-13
 
 ### Added

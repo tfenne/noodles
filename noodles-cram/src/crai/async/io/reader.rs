@@ -1,7 +1,7 @@
 use async_compression::tokio::bufread::GzipDecoder;
 use tokio::io::{self, AsyncBufRead, AsyncBufReadExt, AsyncRead, BufReader};
 
-use crate::crai::Index;
+use crate::crai::{Index, Record};
 
 /// An async CRAM index reader.
 pub struct Reader<R> {
@@ -52,6 +52,42 @@ where
     pub async fn read_index(&mut self) -> io::Result<Index> {
         read_index(&mut self.inner).await
     }
+
+    /// Reads a record.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> tokio::io::Result<()> {
+    /// use noodles_cram::crai;
+    /// use tokio::fs::File;
+    ///
+    /// let mut reader = File::open("sample.cram.crai")
+    ///     .await
+    ///     .map(crai::r#async::io::Reader::new)?;
+    ///
+    /// let mut record = crai::Record::default();
+    ///
+    /// while reader.read_record(&mut record).await? != 0 {
+    ///     // ...
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn read_record(&mut self, record: &mut Record) -> io::Result<usize> {
+        let mut buf = String::new();
+
+        match read_line(&mut self.inner, &mut buf).await? {
+            0 => Ok(0),
+            n => {
+                *record = parse_record(&buf)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+                Ok(n)
+            }
+        }
+    }
 }
 
 async fn read_index<R>(reader: &mut R) -> io::Result<Index>
@@ -67,10 +103,7 @@ where
         match read_line(reader, &mut buf).await {
             Ok(0) => break,
             Ok(_) => {
-                let record = buf
-                    .parse()
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-
+                let record = parse_record(&buf)?;
                 index.push(record);
             }
             Err(e) => return Err(e),
@@ -78,6 +111,11 @@ where
     }
 
     Ok(index)
+}
+
+fn parse_record(s: &str) -> io::Result<Record> {
+    s.parse()
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
 async fn read_line<R>(reader: &mut R, buf: &mut String) -> io::Result<usize>
