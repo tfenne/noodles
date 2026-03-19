@@ -1,10 +1,6 @@
 //! CRAM index record and fields.
 
-mod field;
-
-pub use self::field::Field;
-
-use std::{error, fmt, num, str::FromStr};
+use std::{fmt, io, str::FromStr};
 
 use noodles_core::Position;
 
@@ -214,39 +210,8 @@ impl fmt::Display for Record {
     }
 }
 
-/// An error returned when a raw CRAM index record fails to parse.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ParseError {
-    /// A field is missing.
-    Missing(Field),
-    /// A field is invalid.
-    Invalid(Field, std::num::ParseIntError),
-    /// The reference sequence ID is invalid.
-    InvalidReferenceSequenceId(num::TryFromIntError),
-}
-
-impl error::Error for ParseError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        match self {
-            Self::Missing(_) => None,
-            Self::Invalid(_, e) => Some(e),
-            Self::InvalidReferenceSequenceId(e) => Some(e),
-        }
-    }
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Missing(field) => write!(f, "missing field: {field:?}"),
-            Self::Invalid(field, _) => write!(f, "invalid field: {field:?}"),
-            Self::InvalidReferenceSequenceId(_) => f.write_str("invalid reference sequence ID"),
-        }
-    }
-}
-
 impl FromStr for Record {
-    type Err = ParseError;
+    type Err = io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         super::io::reader::parse_record(s)
@@ -285,19 +250,19 @@ mod tests {
 
     #[test]
     fn test_from_str_with_invalid_records() {
-        assert_eq!(
+        assert!(matches!(
             "0\t10946".parse::<Record>(),
-            Err(ParseError::Missing(Field::AlignmentSpan))
-        );
+            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof
+        ));
 
         assert!(matches!(
             "0\t10946\tnoodles".parse::<Record>(),
-            Err(ParseError::Invalid(Field::AlignmentSpan, _))
+            Err(e) if e.kind() == io::ErrorKind::InvalidData
         ));
 
         assert!(matches!(
             "-8\t10946\t6765\t17711\t233\t317811".parse::<Record>(),
-            Err(ParseError::InvalidReferenceSequenceId(_))
+            Err(e) if e.kind() == io::ErrorKind::InvalidData
         ));
     }
 }

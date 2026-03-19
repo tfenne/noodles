@@ -88,9 +88,7 @@ where
         match read_line(&mut self.inner, &mut buf)? {
             0 => Ok(0),
             n => {
-                *record = parse_record(&buf)
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-
+                *record = parse_record(&buf)?;
                 Ok(n)
             }
         }

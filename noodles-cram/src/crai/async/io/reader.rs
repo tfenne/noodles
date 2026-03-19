@@ -115,7 +115,6 @@ where
 
 fn parse_record(s: &str) -> io::Result<Record> {
     s.parse()
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
 async fn read_line<R>(reader: &mut R, buf: &mut String) -> io::Result<usize>
