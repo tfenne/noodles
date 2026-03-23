@@ -115,15 +115,12 @@ fn parse_skip_counts(src: &mut &[u8]) -> Result<Vec<usize>, ParseError> {
 fn consume_terminator(src: &mut &[u8]) -> Result<(), ParseError> {
     const TERMINATOR: u8 = b';';
 
-    if let Some((b, rest)) = src.split_first() {
-        if *b == TERMINATOR {
-            *src = rest;
-            Ok(())
-        } else {
-            Err(ParseError::InvalidTerminator)
-        }
+    let b = src.split_off_first().ok_or(ParseError::UnexpectedEof)?;
+
+    if *b == TERMINATOR {
+        Ok(())
     } else {
-        Err(ParseError::UnexpectedEof)
+        Err(ParseError::InvalidTerminator)
     }
 }
 
