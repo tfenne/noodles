@@ -7,9 +7,32 @@ where
     W: AsyncWrite + Unpin,
 {
     const LINE_FEED: u8 = b'\n';
+    const UNMAPPED: i32 = -1;
 
-    writer.write_all(record.to_string().as_bytes()).await?;
+    let reference_sequence_id = if let Some(id) = record.reference_sequence_id() {
+        id.to_string()
+    } else {
+        UNMAPPED.to_string()
+    };
+
+    let alignment_start = record
+        .alignment_start()
+        .map(usize::from)
+        .unwrap_or_default();
+
+    let s = format!(
+        "{}\t{}\t{}\t{}\t{}\t{}",
+        reference_sequence_id,
+        alignment_start,
+        record.alignment_span(),
+        record.offset(),
+        record.landmark(),
+        record.slice_length()
+    );
+
+    writer.write_all(s.as_bytes()).await?;
     writer.write_all(&[LINE_FEED]).await?;
+
     Ok(())
 }
 

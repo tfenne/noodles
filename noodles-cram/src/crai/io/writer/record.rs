@@ -6,7 +6,30 @@ pub(super) fn write_record<W>(writer: &mut W, record: &Record) -> io::Result<()>
 where
     W: Write,
 {
-    writeln!(writer, "{record}")
+    const UNMAPPED: i32 = -1;
+
+    if let Some(id) = record.reference_sequence_id() {
+        write!(writer, "{id}\t")?;
+    } else {
+        write!(writer, "{UNMAPPED}\t")?;
+    }
+
+    let alignment_start = record
+        .alignment_start()
+        .map(usize::from)
+        .unwrap_or_default();
+
+    writeln!(
+        writer,
+        "{}\t{}\t{}\t{}\t{}",
+        alignment_start,
+        record.alignment_span(),
+        record.offset(),
+        record.landmark(),
+        record.slice_length()
+    )?;
+
+    Ok(())
 }
 
 #[cfg(test)]
