@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+  * sam/record/data/field/value/base_modifications/parser/group: Return error
+    for invalid position ([#386]).
+
+    This previously assumed valid skip counts for the given filtered sequence
+    and panicked on an invalid position. It now returns a parse error
+    (`ParseError::InvalidPosition`).
+
+[#386]: https://github.com/zaeleus/noodles/issues/386
+
 ## 0.83.0 - 2026-03-13
 
 ### Changed

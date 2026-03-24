@@ -30,6 +30,8 @@ pub enum ParseError {
     InvalidStatus,
     /// A skip count is invalid.
     InvalidSkipCount(lexical_core::Error),
+    /// A position is invalid.
+    InvalidPosition,
     /// The terminator is invalid.
     InvalidTerminator,
 }
@@ -55,6 +57,7 @@ impl fmt::Display for ParseError {
             Self::InvalidModifications(_) => write!(f, "invalid modifications"),
             Self::InvalidStatus => write!(f, "invalid status"),
             Self::InvalidSkipCount(_) => write!(f, "invalid skip count"),
+            Self::InvalidPosition => write!(f, "invalid position"),
             Self::InvalidTerminator => write!(f, "invalid terminator"),
         }
     }
@@ -158,7 +161,7 @@ fn decode_positions(
     };
 
     for &count in skip_counts {
-        let i = iter.nth(count).unwrap();
+        let i = iter.nth(count).ok_or(ParseError::InvalidPosition)?;
         positions.push(i);
     }
 
@@ -234,6 +237,13 @@ mod tests {
             parse_group(&mut src, is_reverse_complemented, &sequence),
             Err(ParseError::InvalidSkipCount(_))
         ));
+
+        let mut src = &b"C+m,8;"[..];
+        let sequence = Sequence::from(b"AAAA");
+        assert_eq!(
+            parse_group(&mut src, is_reverse_complemented, &sequence),
+            Err(ParseError::InvalidPosition)
+        );
     }
 
     #[test]
