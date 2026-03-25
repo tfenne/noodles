@@ -1,6 +1,6 @@
 //! CRAM index record and fields.
 
-use std::{fmt, io, str::FromStr};
+use std::{io, str::FromStr};
 
 use noodles_core::Position;
 
@@ -190,26 +190,6 @@ impl Record {
     }
 }
 
-impl fmt::Display for Record {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        const UNMAPPED: i32 = -1;
-
-        if let Some(id) = self.reference_sequence_id() {
-            write!(f, "{id}\t")?;
-        } else {
-            write!(f, "{UNMAPPED}\t")?;
-        };
-
-        let alignment_start = self.alignment_start().map(usize::from).unwrap_or_default();
-
-        write!(
-            f,
-            "{}\t{}\t{}\t{}\t{}",
-            alignment_start, self.alignment_span, self.offset, self.landmark, self.slice_length
-        )
-    }
-}
-
 impl FromStr for Record {
     type Err = io::Error;
 
@@ -221,14 +201,6 @@ impl FromStr for Record {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_fmt() {
-        let record = Record::new(None, Position::new(10946), 6765, 17711, 233, 317811);
-        let actual = record.to_string();
-        let expected = "-1\t10946\t6765\t17711\t233\t317811";
-        assert_eq!(actual, expected);
-    }
 
     #[test]
     fn test_from_str() -> Result<(), Box<dyn std::error::Error>> {

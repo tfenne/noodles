@@ -6,6 +6,10 @@
 
   * cram/crai/io/reader: Add record reader (`Reader::read_record`).
 
+### Removed
+
+  * cram/crai/record: Remove `fmt::Display` implementation.
+
 ## 0.91.0 - 2026-03-13
 
 ### Added
