@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.109.0 - 2026-03-27
+
+  * [noodles-bam 0.88.0](https://github.com/zaeleus/noodles/blob/noodles-bam-0.88.0/noodles-bam/CHANGELOG.md)
+  * [noodles-bcf 0.85.0](https://github.com/zaeleus/noodles/blob/noodles-bcf-0.85.0/noodles-bcf/CHANGELOG.md)
+  * [noodles-cram 0.92.0](https://github.com/zaeleus/noodles/blob/noodles-cram-0.92.0/noodles-cram/CHANGELOG.md)
+  * [noodles-sam 0.84.0](https://github.com/zaeleus/noodles/blob/noodles-sam-0.84.0/noodles-sam/CHANGELOG.md)
+  * [noodles-util 0.78.0](https://github.com/zaeleus/noodles/blob/noodles-util-0.78.0/noodles-util/CHANGELOG.md)
+  * [noodles-vcf 0.87.0](https://github.com/zaeleus/noodles/blob/noodles-vcf-0.87.0/noodles-vcf/CHANGELOG.md)
+
 ## 0.108.0 - 2026-03-13
 
   * [noodles-bam 0.87.0](https://github.com/zaeleus/noodles/blob/noodles-bam-0.87.0/noodles-bam/CHANGELOG.md)
