@@ -1,7 +1,7 @@
 use async_compression::tokio::bufread::GzipDecoder;
 use tokio::io::{self, AsyncBufRead, AsyncBufReadExt, AsyncRead, BufReader};
 
-use crate::crai::{Index, Record};
+use crate::crai::{Index, Record, io::reader::parse_record};
 
 /// An async CRAM index reader.
 pub struct Reader<R> {
@@ -111,10 +111,6 @@ where
     }
 
     Ok(index)
-}
-
-fn parse_record(s: &str) -> io::Result<Record> {
-    s.parse()
 }
 
 async fn read_line<R>(reader: &mut R, buf: &mut String) -> io::Result<usize>

@@ -10,6 +10,10 @@
 
   * cram/crai/record: Remove `fmt::Display` implementation.
 
+  * cram/crai/record: Remove record parser (`FromStr`).
+
+    Use `crai::io::Reader::read_record` instead.
+
 ## 0.91.0 - 2026-03-13
 
 ### Added

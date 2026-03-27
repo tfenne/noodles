@@ -1,7 +1,5 @@
 //! CRAM index record and fields.
 
-use std::{io, str::FromStr};
-
 use noodles_core::Position;
 
 /// A CRAM index record.
@@ -187,54 +185,5 @@ impl Record {
     /// ```
     pub fn slice_length(&self) -> u64 {
         self.slice_length
-    }
-}
-
-impl FromStr for Record {
-    type Err = io::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        super::io::reader::parse_record(s)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_from_str() -> Result<(), Box<dyn std::error::Error>> {
-        let actual: Record = "0\t10946\t6765\t17711\t233\t317811".parse()?;
-
-        let expected = Record {
-            reference_sequence_id: Some(0),
-            alignment_start: Position::new(10946),
-            alignment_span: 6765,
-            offset: 17711,
-            landmark: 233,
-            slice_length: 317811,
-        };
-
-        assert_eq!(actual, expected);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_from_str_with_invalid_records() {
-        assert!(matches!(
-            "0\t10946".parse::<Record>(),
-            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof
-        ));
-
-        assert!(matches!(
-            "0\t10946\tnoodles".parse::<Record>(),
-            Err(e) if e.kind() == io::ErrorKind::InvalidData
-        ));
-
-        assert!(matches!(
-            "-8\t10946\t6765\t17711\t233\t317811".parse::<Record>(),
-            Err(e) if e.kind() == io::ErrorKind::InvalidData
-        ));
     }
 }

@@ -87,3 +87,32 @@ where
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
         })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_record() -> io::Result<()> {
+        let actual = parse_record("0\t10946\t6765\t17711\t233\t317811")?;
+        let expected = Record::new(Some(0), Position::new(10946), 6765, 17711, 233, 317811);
+        assert_eq!(actual, expected);
+
+        assert!(matches!(
+            parse_record("0\t10946"),
+            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof
+        ));
+
+        assert!(matches!(
+            parse_record("0\t10946\tnoodles"),
+            Err(e) if e.kind() == io::ErrorKind::InvalidData
+        ));
+
+        assert!(matches!(
+            parse_record("-8\t10946\t6765\t17711\t233\t317811"),
+            Err(e) if e.kind() == io::ErrorKind::InvalidData
+        ));
+
+        Ok(())
+    }
+}
