@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+  * cram: Update to md-5 0.11.0.
+
 ## 0.92.0 - 2026-03-27
 
 ### Added
