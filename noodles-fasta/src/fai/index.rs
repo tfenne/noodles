@@ -10,6 +10,21 @@ pub struct Index(Vec<Record>);
 
 impl Index {
     /// Returns start position of the given region.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use noodles_core::Region;
+    /// use noodles_fasta::fai;
+    ///
+    /// let index = fai::Index::from(vec![
+    ///     fai::Record::new("sq0", 10946, 4, 80, 81),
+    /// ]);
+    ///
+    /// let region = Region::new("sq0", ..);
+    /// assert_eq!(index.query(&region)?, 4);
+    /// # Ok::<_, std::io::Error>(())
+    /// ```
     pub fn query(&self, region: &Region) -> io::Result<u64> {
         self.as_ref()
             .iter()
