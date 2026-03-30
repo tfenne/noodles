@@ -54,11 +54,9 @@ pub(super) fn read_name(
 ) -> Result<(), DecodeError> {
     const MISSING: [u8; 2] = [b'*', NUL];
 
-    let (buf, rest) = src
-        .split_at_checked(len.get())
+    let buf = src
+        .split_off(..len.get())
         .ok_or(DecodeError::UnexpectedEof)?;
-
-    *src = rest;
 
     *name = if buf == MISSING {
         None
