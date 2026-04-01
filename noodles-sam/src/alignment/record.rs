@@ -6,6 +6,7 @@ mod flags;
 pub mod mapping_quality;
 mod quality_scores;
 mod sequence;
+mod sequence_ref;
 
 use std::io;
 
