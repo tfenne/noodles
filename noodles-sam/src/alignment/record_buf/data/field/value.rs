@@ -171,7 +171,7 @@ impl From<u32> for Value {
 
 impl From<f32> for Value {
     fn from(n: f32) -> Self {
-        Value::Float(n)
+        Self::Float(n)
     }
 }
 
@@ -189,43 +189,43 @@ impl From<String> for Value {
 
 impl From<Vec<i8>> for Value {
     fn from(values: Vec<i8>) -> Self {
-        Value::Array(Array::Int8(values))
+        Self::Array(Array::Int8(values))
     }
 }
 
 impl From<Vec<u8>> for Value {
     fn from(values: Vec<u8>) -> Self {
-        Value::Array(Array::UInt8(values))
+        Self::Array(Array::UInt8(values))
     }
 }
 
 impl From<Vec<i16>> for Value {
     fn from(values: Vec<i16>) -> Self {
-        Value::Array(Array::Int16(values))
+        Self::Array(Array::Int16(values))
     }
 }
 
 impl From<Vec<u16>> for Value {
     fn from(values: Vec<u16>) -> Self {
-        Value::Array(Array::UInt16(values))
+        Self::Array(Array::UInt16(values))
     }
 }
 
 impl From<Vec<i32>> for Value {
     fn from(values: Vec<i32>) -> Self {
-        Value::Array(Array::Int32(values))
+        Self::Array(Array::Int32(values))
     }
 }
 
 impl From<Vec<u32>> for Value {
     fn from(values: Vec<u32>) -> Self {
-        Value::Array(Array::UInt32(values))
+        Self::Array(Array::UInt32(values))
     }
 }
 
 impl From<Vec<f32>> for Value {
     fn from(values: Vec<f32>) -> Self {
-        Value::Array(Array::Float(values))
+        Self::Array(Array::Float(values))
     }
 }
 
