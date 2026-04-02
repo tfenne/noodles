@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+
+  * sam/alignment/record/sequence: Remove `Sequence::split_at_checked`.
+
+    This was never supported by all sequence implementations.
+
 ## 0.84.0 - 2026-03-27
 
 ### Fixed

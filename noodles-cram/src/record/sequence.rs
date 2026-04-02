@@ -46,16 +46,6 @@ impl sam::alignment::record::Sequence for Sequence<'_, '_> {
         self.iter().nth(i)
     }
 
-    fn split_at_checked(
-        &self,
-        _mid: usize,
-    ) -> Option<(
-        Box<dyn sam::alignment::record::Sequence + '_>,
-        Box<dyn sam::alignment::record::Sequence + '_>,
-    )> {
-        todo!()
-    }
-
     fn iter(&self) -> Box<dyn Iterator<Item = u8> + '_> {
         Box::new(Iter::new(
             self.reference_sequence,

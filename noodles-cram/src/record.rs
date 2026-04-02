@@ -214,16 +214,6 @@ impl sam::alignment::record::Sequence for Bases<'_> {
         self.0.get(i).copied()
     }
 
-    fn split_at_checked(
-        &self,
-        _mid: usize,
-    ) -> Option<(
-        Box<dyn sam::alignment::record::Sequence + '_>,
-        Box<dyn sam::alignment::record::Sequence + '_>,
-    )> {
-        todo!()
-    }
-
     fn iter(&self) -> Box<dyn Iterator<Item = u8> + '_> {
         Box::new(self.0.iter().copied())
     }

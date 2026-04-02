@@ -42,24 +42,6 @@ impl crate::alignment::record::Sequence for Sequence<'_> {
         self.get(i)
     }
 
-    fn split_at_checked(
-        &self,
-        mid: usize,
-    ) -> Option<(
-        Box<dyn crate::alignment::record::Sequence + '_>,
-        Box<dyn crate::alignment::record::Sequence + '_>,
-    )> {
-        if mid <= self.len() {
-            let (left, right) = self.0.split_at(mid);
-            Some((
-                Box::new(Sequence::new(left)),
-                Box::new(Sequence::new(right)),
-            ))
-        } else {
-            None
-        }
-    }
-
     fn iter(&self) -> Box<dyn Iterator<Item = u8> + '_> {
         Box::new(self.as_ref().iter().copied())
     }
