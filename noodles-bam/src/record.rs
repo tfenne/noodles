@@ -272,11 +272,11 @@ impl sam::alignment::Record for Record {
     }
 }
 
-fn try_to_reference_sequence_id(n: i32) -> io::Result<usize> {
+pub(super) fn try_to_reference_sequence_id(n: i32) -> io::Result<usize> {
     usize::try_from(n).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-fn try_to_position(n: i32) -> io::Result<Position> {
+pub(super) fn try_to_position(n: i32) -> io::Result<Position> {
     usize::try_from(n)
         .map(|m| m + 1)
         .and_then(Position::try_from)

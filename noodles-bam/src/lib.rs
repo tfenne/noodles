@@ -49,5 +49,6 @@ pub mod bai;
 pub mod fs;
 pub mod io;
 pub mod record;
+mod record_ref;
 
 pub use self::record::Record;

@@ -1,6 +1,6 @@
 //! BAM record fields.
 
-mod bounds;
+pub(crate) mod bounds;
 
 use std::{io, mem};
 
@@ -189,7 +189,7 @@ impl TryFrom<Vec<u8>> for Fields {
     }
 }
 
-fn get_reference_sequence_id(src: [u8; 4]) -> Option<i32> {
+pub(crate) fn get_reference_sequence_id(src: [u8; 4]) -> Option<i32> {
     const UNMAPPED: i32 = -1;
 
     match i32::from_le_bytes(src) {
@@ -198,7 +198,7 @@ fn get_reference_sequence_id(src: [u8; 4]) -> Option<i32> {
     }
 }
 
-fn get_position(src: [u8; 4]) -> Option<i32> {
+pub(crate) fn get_position(src: [u8; 4]) -> Option<i32> {
     const MISSING: i32 = -1;
 
     match i32::from_le_bytes(src) {
