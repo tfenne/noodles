@@ -2,6 +2,7 @@
 
 use std::io;
 
+use bstr::{BStr, ByteSlice};
 use noodles_core::Position;
 use noodles_sam::alignment::record::Flags;
 
@@ -23,6 +24,11 @@ impl RecordRef<'_> {
         let src = &self.0[bounds::ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
+    }
+
+    fn name_length(&self) -> usize {
+        let n = &self.0[bounds::NAME_LENGTH_INDEX];
+        usize::from(*n)
     }
 
     fn mapping_quality(&self) -> Option<u8> {
@@ -57,6 +63,20 @@ impl RecordRef<'_> {
         let src = &self.0[bounds::TEMPLATE_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         i32::from_le_bytes(src.try_into().unwrap())
+    }
+
+    fn name(&self) -> Option<&BStr> {
+        const NUL: u8 = 0x00;
+        const MISSING: &[u8] = &[b'*', NUL];
+
+        let read_name_len = self.name_length();
+        let start = bounds::TEMPLATE_LENGTH_RANGE.end;
+        let end = start + read_name_len;
+
+        match &self.0[start..end] {
+            MISSING => None,
+            buf => Some(buf.strip_suffix(&[NUL]).unwrap_or(buf).as_bstr()),
+        }
     }
 }
 
@@ -93,6 +113,7 @@ mod tests {
         assert!(record.mate_reference_sequence_id().transpose()?.is_none());
         assert!(record.mate_alignment_start().transpose()?.is_none());
         assert_eq!(record.template_length(), 0);
+        assert!(record.name().is_none());
 
         Ok(())
     }
