@@ -102,6 +102,19 @@ impl RecordRef<'_> {
 
         &self.0[start..end]
     }
+
+    fn quality_scores(&self) -> &[u8] {
+        let base_count = self.base_count();
+
+        let start = bounds::TEMPLATE_LENGTH_RANGE.end
+            + self.name_length()
+            + (self.cigar_op_count() * mem::size_of::<u32>())
+            + base_count.div_ceil(2);
+
+        let end = start + base_count;
+
+        &self.0[start..end]
+    }
 }
 
 #[cfg(test)]
@@ -139,6 +152,7 @@ mod tests {
         assert_eq!(record.template_length(), 0);
         assert!(record.name().is_none());
         assert_eq!(record.sequence(), &[0x12, 0x48]);
+        assert_eq!(record.quality_scores(), b"NDLS");
 
         Ok(())
     }
