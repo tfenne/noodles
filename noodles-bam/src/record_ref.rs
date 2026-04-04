@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::io;
+use std::{io, mem};
 
 use bstr::{BStr, ByteSlice};
 use noodles_core::Position;
@@ -40,11 +40,24 @@ impl RecordRef<'_> {
         }
     }
 
+    fn cigar_op_count(&self) -> usize {
+        let src = &self.0[bounds::CIGAR_OP_COUNT_RANGE];
+        // SAFETY: `src.len() == mem::size_of::<u16>()`.
+        usize::from(u16::from_le_bytes(src.try_into().unwrap()))
+    }
+
     fn flags(&self) -> Flags {
         let src = &self.0[bounds::FLAGS_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u16>()`.
         let n = u16::from_le_bytes(src.try_into().unwrap());
         Flags::from(n)
+    }
+
+    fn base_count(&self) -> usize {
+        let src = &self.0[bounds::READ_LENGTH_RANGE];
+        // SAFETY: `src.len() == mem::size_of::<u32>()`.
+        let n = u32::from_le_bytes(src.try_into().unwrap());
+        usize::try_from(n).unwrap()
     }
 
     fn mate_reference_sequence_id(&self) -> Option<io::Result<usize>> {
@@ -77,6 +90,17 @@ impl RecordRef<'_> {
             MISSING => None,
             buf => Some(buf.strip_suffix(&[NUL]).unwrap_or(buf).as_bstr()),
         }
+    }
+
+    fn sequence(&self) -> &[u8] {
+        let start = bounds::TEMPLATE_LENGTH_RANGE.end
+            + self.name_length()
+            + (self.cigar_op_count() * mem::size_of::<u32>());
+
+        let sequence_len = self.base_count().div_ceil(2);
+        let end = start + sequence_len;
+
+        &self.0[start..end]
     }
 }
 
@@ -114,6 +138,7 @@ mod tests {
         assert!(record.mate_alignment_start().transpose()?.is_none());
         assert_eq!(record.template_length(), 0);
         assert!(record.name().is_none());
+        assert_eq!(record.sequence(), &[0x12, 0x48]);
 
         Ok(())
     }
