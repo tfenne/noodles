@@ -16,56 +16,11 @@ pub(crate) struct Fields {
 }
 
 impl Fields {
-    pub(super) fn reference_sequence_id(&self) -> Option<i32> {
-        let src = &self.buf[bounds::REFERENCE_SEQUENCE_ID_RANGE];
-        // SAFETY: `src` is 4 bytes.
-        get_reference_sequence_id(src.try_into().unwrap())
-    }
-
-    // N.B. this is 0-based.
-    pub(super) fn alignment_start(&self) -> Option<i32> {
-        let src = &self.buf[bounds::ALIGNMENT_START_RANGE];
-        // SAFETY: `src` is 4 bytes.
-        get_position(src.try_into().unwrap())
-    }
-
-    pub(super) fn mapping_quality(&self) -> Option<u8> {
-        const MISSING: u8 = 255;
-
-        match self.buf[bounds::MAPPING_QUALITY_INDEX] {
-            MISSING => None,
-            n => Some(n),
-        }
-    }
-
-    pub(super) fn flags(&self) -> u16 {
-        let src = &self.buf[bounds::FLAGS_RANGE];
-        // SAFETY: `src` is 2 bytes.
-        u16::from_le_bytes(src.try_into().unwrap())
-    }
-
     fn read_length(&self) -> usize {
         let src = &self.buf[bounds::READ_LENGTH_RANGE];
         // SAFETY: `src` is 4 bytes.
         let n = u32::from_le_bytes(src.try_into().unwrap());
         usize::try_from(n).unwrap()
-    }
-
-    pub(super) fn mate_reference_sequence_id(&self) -> Option<i32> {
-        let src = &self.buf[bounds::MATE_REFERENCE_SEQUENCE_ID_RANGE];
-        // SAFETY: `src` is 4 bytes.
-        get_reference_sequence_id(src.try_into().unwrap())
-    }
-
-    pub(super) fn mate_alignment_start(&self) -> Option<i32> {
-        let src = &self.buf[bounds::MATE_ALIGNMENT_START_RANGE];
-        get_position(src.try_into().unwrap())
-    }
-
-    pub(super) fn template_length(&self) -> i32 {
-        let src = &self.buf[bounds::TEMPLATE_LENGTH_RANGE];
-        // SAFETY: `src` is 4 bytes.
-        i32::from_le_bytes(src.try_into().unwrap())
     }
 
     pub(super) fn name(&self) -> Option<&BStr> {

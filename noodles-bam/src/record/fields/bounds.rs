@@ -1,6 +1,5 @@
 use std::ops::{Range, RangeFrom};
 
-pub const REFERENCE_SEQUENCE_ID_RANGE: Range<usize> = 0..4;
 pub const ALIGNMENT_START_RANGE: Range<usize> = 4..8;
 pub const NAME_LENGTH_INDEX: usize = 8;
 pub const MAPPING_QUALITY_INDEX: usize = 9;

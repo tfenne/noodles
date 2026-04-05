@@ -18,6 +18,7 @@ use noodles_sam::{
 
 pub(crate) use self::fields::Fields;
 pub use self::{cigar::Cigar, data::Data, quality_scores::QualityScores, sequence::Sequence};
+use super::RecordRef;
 
 /// A BAM record.
 #[derive(Clone, Default, Eq, PartialEq)]
@@ -38,9 +39,7 @@ impl Record {
     /// assert!(record.reference_sequence_id().is_none());
     /// ```
     pub fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
-        self.0
-            .reference_sequence_id()
-            .map(try_to_reference_sequence_id)
+        self.as_record_ref().reference_sequence_id()
     }
 
     /// Returns the alignment start.
@@ -55,7 +54,7 @@ impl Record {
     /// assert!(record.alignment_start().is_none());
     /// ```
     pub fn alignment_start(&self) -> Option<io::Result<Position>> {
-        self.0.alignment_start().map(try_to_position)
+        self.as_record_ref().alignment_start()
     }
 
     /// Returns the mapping quality.
@@ -68,7 +67,9 @@ impl Record {
     /// assert!(record.mapping_quality().is_none());
     /// ```
     pub fn mapping_quality(&self) -> Option<MappingQuality> {
-        self.0.mapping_quality().and_then(MappingQuality::new)
+        self.as_record_ref()
+            .mapping_quality()
+            .and_then(MappingQuality::new)
     }
 
     /// Returns the flags.
@@ -82,7 +83,7 @@ impl Record {
     /// assert_eq!(Flags::from(record.flags()), Flags::UNMAPPED);
     /// ```
     pub fn flags(&self) -> Flags {
-        Flags::from(self.0.flags())
+        self.as_record_ref().flags()
     }
 
     /// Returns the mate reference sequence ID.
@@ -95,9 +96,7 @@ impl Record {
     /// assert!(record.mate_reference_sequence_id().is_none());
     /// ```
     pub fn mate_reference_sequence_id(&self) -> Option<io::Result<usize>> {
-        self.0
-            .mate_reference_sequence_id()
-            .map(try_to_reference_sequence_id)
+        self.as_record_ref().mate_reference_sequence_id()
     }
 
     /// Returns the mate alignment start.
@@ -112,7 +111,7 @@ impl Record {
     /// assert!(record.mate_alignment_start().is_none());
     /// ```
     pub fn mate_alignment_start(&self) -> Option<io::Result<Position>> {
-        self.0.mate_alignment_start().map(try_to_position)
+        self.as_record_ref().mate_alignment_start()
     }
 
     /// Returns the template length.
@@ -125,7 +124,7 @@ impl Record {
     /// assert_eq!(i32::from(record.template_length()), 0);
     /// ```
     pub fn template_length(&self) -> i32 {
-        self.0.template_length()
+        self.as_record_ref().template_length()
     }
 
     /// Returns the read name.
@@ -191,6 +190,10 @@ impl Record {
     /// ```
     pub fn data(&self) -> Data<'_> {
         self.0.data()
+    }
+
+    fn as_record_ref(&self) -> RecordRef<'_> {
+        RecordRef(&self.0.buf)
     }
 }
 

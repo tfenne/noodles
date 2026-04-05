@@ -11,16 +11,16 @@ use super::record::{
     try_to_position, try_to_reference_sequence_id,
 };
 
-struct RecordRef<'a>(&'a [u8]);
+pub struct RecordRef<'a>(pub &'a [u8]);
 
 impl RecordRef<'_> {
-    fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
+    pub fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
         // SAFETY: `self.head.len() >= mem::size_of::<i32>()`.
         let src = self.0.first_chunk().unwrap();
         get_reference_sequence_id(*src).map(try_to_reference_sequence_id)
     }
 
-    fn alignment_start(&self) -> Option<io::Result<Position>> {
+    pub fn alignment_start(&self) -> Option<io::Result<Position>> {
         let src = &self.0[bounds::ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
@@ -31,7 +31,7 @@ impl RecordRef<'_> {
         usize::from(*n)
     }
 
-    fn mapping_quality(&self) -> Option<u8> {
+    pub fn mapping_quality(&self) -> Option<u8> {
         const MISSING: u8 = 255;
 
         match self.0[bounds::MAPPING_QUALITY_INDEX] {
@@ -46,7 +46,7 @@ impl RecordRef<'_> {
         usize::from(u16::from_le_bytes(src.try_into().unwrap()))
     }
 
-    fn flags(&self) -> Flags {
+    pub fn flags(&self) -> Flags {
         let src = &self.0[bounds::FLAGS_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u16>()`.
         let n = u16::from_le_bytes(src.try_into().unwrap());
@@ -60,19 +60,19 @@ impl RecordRef<'_> {
         usize::try_from(n).unwrap()
     }
 
-    fn mate_reference_sequence_id(&self) -> Option<io::Result<usize>> {
+    pub fn mate_reference_sequence_id(&self) -> Option<io::Result<usize>> {
         let src = &self.0[bounds::MATE_REFERENCE_SEQUENCE_ID_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_reference_sequence_id(src.try_into().unwrap()).map(try_to_reference_sequence_id)
     }
 
-    fn mate_alignment_start(&self) -> Option<io::Result<Position>> {
+    pub fn mate_alignment_start(&self) -> Option<io::Result<Position>> {
         let src = &self.0[bounds::MATE_ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
     }
 
-    fn template_length(&self) -> i32 {
+    pub fn template_length(&self) -> i32 {
         let src = &self.0[bounds::TEMPLATE_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         i32::from_le_bytes(src.try_into().unwrap())

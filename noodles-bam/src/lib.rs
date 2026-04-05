@@ -52,3 +52,4 @@ pub mod record;
 mod record_ref;
 
 pub use self::record::Record;
+pub(crate) use self::record_ref::RecordRef;
