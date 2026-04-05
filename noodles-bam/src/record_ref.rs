@@ -53,7 +53,7 @@ impl<'a> RecordRef<'a> {
         Flags::from(n)
     }
 
-    fn base_count(&self) -> usize {
+    pub(crate) fn base_count(&self) -> usize {
         let src = &self.0[bounds::READ_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u32>()`.
         let n = u32::from_le_bytes(src.try_into().unwrap());
@@ -92,7 +92,7 @@ impl<'a> RecordRef<'a> {
         }
     }
 
-    fn sequence(&self) -> &[u8] {
+    pub fn sequence(&self) -> &'a [u8] {
         let start = bounds::TEMPLATE_LENGTH_RANGE.end
             + self.name_length()
             + (self.cigar_op_count() * mem::size_of::<u32>());

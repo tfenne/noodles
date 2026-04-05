@@ -23,10 +23,6 @@ impl Bounds {
         self.name_end..self.cigar_end
     }
 
-    pub fn sequence_range(&self) -> Range<usize> {
-        self.cigar_end..self.sequence_end
-    }
-
     pub fn quality_scores_range(&self) -> Range<usize> {
         self.sequence_end..self.quality_scores_end
     }
@@ -50,7 +46,6 @@ mod tests {
         };
 
         assert_eq!(bounds.cigar_range(), 34..38);
-        assert_eq!(bounds.sequence_range(), 38..40);
         assert_eq!(bounds.quality_scores_range(), 40..42);
         assert_eq!(bounds.data_range(), 42..);
     }

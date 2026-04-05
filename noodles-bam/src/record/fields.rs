@@ -5,7 +5,7 @@ pub(crate) mod bounds;
 use std::{io, mem};
 
 use self::bounds::Bounds;
-use super::{Cigar, Data, QualityScores, Sequence};
+use super::{Cigar, Data, QualityScores};
 
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct Fields {
@@ -35,7 +35,7 @@ impl Fields {
         let src = &self.buf[self.bounds.cigar_range()];
 
         if let ([chunk_0, chunk_1], []) = src.as_chunks() {
-            let k = self.sequence().len();
+            let k = self.read_length();
 
             let op_1 = decode_op(chunk_0);
             let op_2 = decode_op(chunk_1);
@@ -50,12 +50,6 @@ impl Fields {
         }
 
         Cigar::new(src)
-    }
-
-    pub(super) fn sequence(&self) -> Sequence<'_> {
-        let src = &self.buf[self.bounds.sequence_range()];
-        let base_count = self.read_length();
-        Sequence::new(src, base_count)
     }
 
     pub(super) fn quality_scores(&self) -> QualityScores<'_> {
@@ -278,7 +272,6 @@ mod tests {
         fields.index()?;
 
         assert_eq!(fields.bounds.cigar_range(), 34..38);
-        assert_eq!(fields.bounds.sequence_range(), 38..40);
         assert_eq!(fields.bounds.quality_scores_range(), 40..44);
         assert_eq!(fields.bounds.data_range(), 44..);
 

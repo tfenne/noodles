@@ -163,7 +163,9 @@ impl Record {
     /// assert!(record.sequence().is_empty());
     /// ```
     pub fn sequence(&self) -> Sequence<'_> {
-        self.0.sequence()
+        let record_ref = self.as_record_ref();
+        let base_count = record_ref.base_count();
+        Sequence::new(record_ref.sequence(), base_count)
     }
 
     /// Returns the quality scores.
