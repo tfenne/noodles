@@ -19,10 +19,6 @@ pub struct Bounds {
 }
 
 impl Bounds {
-    pub fn name_range(&self) -> Range<usize> {
-        TEMPLATE_LENGTH_RANGE.end..self.name_end
-    }
-
     pub fn cigar_range(&self) -> Range<usize> {
         self.name_end..self.cigar_end
     }
@@ -53,7 +49,6 @@ mod tests {
             quality_scores_end: 42,
         };
 
-        assert_eq!(bounds.name_range(), 32..34);
         assert_eq!(bounds.cigar_range(), 34..38);
         assert_eq!(bounds.sequence_range(), 38..40);
         assert_eq!(bounds.quality_scores_range(), 40..42);

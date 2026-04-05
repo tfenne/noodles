@@ -137,7 +137,7 @@ impl Record {
     /// assert!(record.name().is_none());
     /// ```
     pub fn name(&self) -> Option<&BStr> {
-        self.0.name()
+        self.as_record_ref().name()
     }
 
     /// Returns the CIGAR operations.

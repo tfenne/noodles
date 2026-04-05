@@ -13,7 +13,7 @@ use super::record::{
 
 pub struct RecordRef<'a>(pub &'a [u8]);
 
-impl RecordRef<'_> {
+impl<'a> RecordRef<'a> {
     pub fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
         // SAFETY: `self.head.len() >= mem::size_of::<i32>()`.
         let src = self.0.first_chunk().unwrap();
@@ -78,7 +78,7 @@ impl RecordRef<'_> {
         i32::from_le_bytes(src.try_into().unwrap())
     }
 
-    fn name(&self) -> Option<&BStr> {
+    pub fn name(&self) -> Option<&'a BStr> {
         const NUL: u8 = 0x00;
         const MISSING: &[u8] = &[b'*', NUL];
 
@@ -153,6 +153,32 @@ mod tests {
         assert!(record.name().is_none());
         assert_eq!(record.sequence(), &[0x12, 0x48]);
         assert_eq!(record.quality_scores(), b"NDLS");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_name() -> io::Result<()> {
+        const SRC: &[u8; 45] = &[
+            0xff, 0xff, 0xff, 0xff, // ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // pos = -1
+            0x03, // l_read_name = 3
+            0xff, // mapq = 255
+            0x48, 0x12, // bin = 4680
+            0x01, 0x00, // n_cigar_op = 1
+            0x04, 0x00, // flag = 4
+            0x04, 0x00, 0x00, 0x00, // l_seq = 0
+            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // next_pos = -1
+            0x00, 0x00, 0x00, 0x00, // tlen = 0
+            b'r', b'0', 0x00, // read_name = "r0\x00"
+            0x40, 0x00, 0x00, 0x00, // cigar = 4M
+            0x12, 0x48, // sequence = ACGT
+            b'N', b'D', b'L', b'S', // quality scores
+        ];
+
+        let record = RecordRef(SRC);
+        assert_eq!(record.name(), Some(b"r0".as_bstr()));
 
         Ok(())
     }
