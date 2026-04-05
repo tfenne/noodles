@@ -6,10 +6,7 @@ use bstr::{BStr, ByteSlice};
 use noodles_core::Position;
 use noodles_sam::alignment::record::Flags;
 
-use super::record::{
-    fields::{bounds, get_position, get_reference_sequence_id},
-    try_to_position, try_to_reference_sequence_id,
-};
+use super::record::{fields::bounds, try_to_position, try_to_reference_sequence_id};
 
 pub struct RecordRef<'a>(pub &'a [u8]);
 
@@ -169,6 +166,24 @@ impl<'a> RecordRef<'a> {
             + base_count;
 
         &self.0[start..]
+    }
+}
+
+fn get_reference_sequence_id(src: [u8; 4]) -> Option<i32> {
+    const UNMAPPED: i32 = -1;
+
+    match i32::from_le_bytes(src) {
+        UNMAPPED => None,
+        n => Some(n),
+    }
+}
+
+fn get_position(src: [u8; 4]) -> Option<i32> {
+    const MISSING: i32 = -1;
+
+    match i32::from_le_bytes(src) {
+        MISSING => None,
+        n => Some(n),
     }
 }
 
