@@ -178,7 +178,7 @@ impl Record {
     /// assert!(record.quality_scores().is_empty());
     /// ```
     pub fn quality_scores(&self) -> QualityScores<'_> {
-        self.0.quality_scores()
+        QualityScores::new(self.as_record_ref().quality_scores())
     }
 
     /// Returns the data.

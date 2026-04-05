@@ -5,7 +5,7 @@ pub(crate) mod bounds;
 use std::{io, mem};
 
 use self::bounds::Bounds;
-use super::{Cigar, QualityScores};
+use super::Cigar;
 
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct Fields {
@@ -50,22 +50,6 @@ impl Fields {
         }
 
         Cigar::new(src)
-    }
-
-    pub(super) fn quality_scores(&self) -> QualityScores<'_> {
-        const MISSING: u8 = 0xff;
-
-        let buf = &self.buf[self.bounds.quality_scores_range()];
-
-        // § 4.2.3 "SEQ and QUAL encoding" (2024-11-06): "When base quality are omitted but the
-        // sequence is not, `qual` is filled with `0xFF` bytes (to length `l_seq`)."
-        let src = if buf.iter().all(|&b| b == MISSING) {
-            &[]
-        } else {
-            buf
-        };
-
-        QualityScores::new(src)
     }
 
     pub(crate) fn index(&mut self) -> io::Result<()> {
@@ -267,7 +251,6 @@ mod tests {
         fields.index()?;
 
         assert_eq!(fields.bounds.cigar_range(), 34..38);
-        assert_eq!(fields.bounds.quality_scores_range(), 40..44);
         assert_eq!(fields.bounds.data_range(), 44..);
 
         Ok(())

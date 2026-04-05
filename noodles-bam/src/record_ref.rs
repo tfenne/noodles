@@ -103,7 +103,7 @@ impl<'a> RecordRef<'a> {
         &self.0[start..end]
     }
 
-    fn quality_scores(&self) -> &[u8] {
+    pub fn quality_scores(&self) -> &'a [u8] {
         const MISSING: u8 = 0xff;
 
         let base_count = self.base_count();
