@@ -6,6 +6,8 @@ pub(super) async fn read_record<R>(reader: &mut R, buf: &mut Vec<u8>) -> io::Res
 where
     R: AsyncRead + Unpin,
 {
+    use crate::io::reader::record::validate;
+
     let block_size = match read_block_size(reader).await? {
         0 => return Ok(0),
         n => n,
@@ -13,6 +15,8 @@ where
 
     buf.resize(block_size, 0);
     reader.read_exact(buf).await?;
+
+    validate(buf)?;
 
     Ok(block_size)
 }

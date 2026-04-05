@@ -220,8 +220,6 @@ where
             n => n,
         };
 
-        fields.index()?;
-
         Ok(block_size)
     }
 

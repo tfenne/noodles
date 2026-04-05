@@ -304,7 +304,7 @@ mod tests {
                     cigar::{Op, op::Kind},
                     data::field::Tag,
                 },
-                record_buf::{Cigar, Sequence, data::field::Value},
+                record_buf::{Cigar as CigarBuf, Sequence, data::field::Value},
             },
             header::record::value::{Map, map::ReferenceSequence},
         };
@@ -322,7 +322,7 @@ mod tests {
             )
             .build();
 
-        let cigar = Cigar::from(vec![Op::new(Kind::Match, 1); BASE_COUNT]);
+        let cigar = CigarBuf::from(vec![Op::new(Kind::Match, 1); BASE_COUNT]);
         let sequence = Sequence::from(vec![b'A'; BASE_COUNT]);
 
         let record = RecordBuf::builder()
@@ -340,8 +340,8 @@ mod tests {
 
         encode(&mut buf, &header, &record)?;
 
-        let record = Fields::try_from(buf).map(Record)?;
-        assert_eq!(record.cigar().len(), BASE_COUNT);
+        let record = RecordRef(&buf);
+        assert_eq!(Cigar::new(record.cigar()).len(), BASE_COUNT);
 
         Ok(())
     }

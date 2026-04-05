@@ -15,6 +15,8 @@ where
     buf.resize(block_size, 0);
     reader.read_exact(buf)?;
 
+    validate(buf)?;
+
     Ok(block_size)
 }
 
@@ -51,6 +53,39 @@ where
             io::ErrorKind::UnexpectedEof,
             "failed to fill whole buffer",
         ))
+    } else {
+        Ok(())
+    }
+}
+
+pub(crate) fn validate(src: &[u8]) -> io::Result<()> {
+    use crate::record::fields::bounds;
+
+    const MIN_BUF_LENGTH: usize = bounds::TEMPLATE_LENGTH_RANGE.end;
+
+    if src.len() < MIN_BUF_LENGTH {
+        return Err(io::Error::from(io::ErrorKind::UnexpectedEof));
+    }
+
+    let name_len = usize::from(src[bounds::NAME_LENGTH_INDEX]);
+
+    let buf = &src[bounds::CIGAR_OP_COUNT_RANGE];
+    // SAFETY: `buf.len() == mem::size_of::<u16>()`.
+    let cigar_op_count = usize::from(u16::from_le_bytes(buf.try_into().unwrap()));
+
+    let buf = &src[bounds::READ_LENGTH_RANGE];
+    // SAFETY: `buf.len() == mem::size_of::<u32>()`.
+    let base_count = usize::try_from(u32::from_le_bytes(buf.try_into().unwrap()))
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+    let quality_scores_end = MIN_BUF_LENGTH
+        + name_len
+        + (cigar_op_count * mem::size_of::<u32>())
+        + base_count.div_ceil(2)
+        + base_count;
+
+    if src.len() < quality_scores_end {
+        Err(io::Error::from(io::ErrorKind::UnexpectedEof))
     } else {
         Ok(())
     }

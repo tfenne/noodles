@@ -4,7 +4,7 @@ mod builder;
 pub mod header;
 pub(crate) mod num;
 pub(crate) mod query;
-mod record;
+pub(crate) mod record;
 mod record_buf;
 mod record_bufs;
 mod records;
@@ -259,8 +259,6 @@ where
             0 => return Ok(0),
             n => n,
         };
-
-        fields.index()?;
 
         Ok(block_size)
     }
