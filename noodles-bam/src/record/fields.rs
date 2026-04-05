@@ -2,12 +2,9 @@
 
 pub(crate) mod bounds;
 
-use self::bounds::Bounds;
-
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct Fields {
     pub(crate) buf: Vec<u8>,
-    pub(crate) bounds: Bounds,
 }
 
 impl Default for Fields {
@@ -27,14 +24,7 @@ impl Default for Fields {
             b'*', 0x00, // read_name = "*\x00"
         ];
 
-        let bounds = Bounds {
-            name_end: buf.len(),
-            cigar_end: buf.len(),
-            sequence_end: buf.len(),
-            quality_scores_end: buf.len(),
-        };
-
-        Self { buf, bounds }
+        Self { buf }
     }
 }
 
