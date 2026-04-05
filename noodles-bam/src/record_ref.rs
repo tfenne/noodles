@@ -104,6 +104,8 @@ impl<'a> RecordRef<'a> {
     }
 
     fn quality_scores(&self) -> &[u8] {
+        const MISSING: u8 = 0xff;
+
         let base_count = self.base_count();
 
         let start = bounds::TEMPLATE_LENGTH_RANGE.end
@@ -113,7 +115,15 @@ impl<'a> RecordRef<'a> {
 
         let end = start + base_count;
 
-        &self.0[start..end]
+        let src = &self.0[start..end];
+
+        // § 4.2.3 "SEQ and QUAL encoding" (2024-11-06): "When base quality are omitted but the
+        // sequence is not, `qual` is filled with `0xFF` bytes (to length `l_seq`)."
+        if src.iter().all(|&b| b == MISSING) {
+            &[]
+        } else {
+            src
+        }
     }
 
     pub fn data(&self) -> &'a [u8] {
@@ -192,6 +202,32 @@ mod tests {
 
         let record = RecordRef(SRC);
         assert_eq!(record.name(), Some(b"r0".as_bstr()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_quality_scores_with_missing_scores() -> io::Result<()> {
+        const SRC: &[u8; 44] = &[
+            0xff, 0xff, 0xff, 0xff, // ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // pos = -1
+            0x02, // l_read_name = 2
+            0xff, // mapq = 255
+            0x48, 0x12, // bin = 4680
+            0x01, 0x00, // n_cigar_op = 1
+            0x04, 0x00, // flag = 4
+            0x04, 0x00, 0x00, 0x00, // l_seq = 0
+            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // next_pos = -1
+            0x00, 0x00, 0x00, 0x00, // tlen = 0
+            b'*', 0x00, // read_name = "*\x00"
+            0x40, 0x00, 0x00, 0x00, // cigar = 4M
+            0x12, 0x48, // sequence = ACGT
+            0xff, 0xff, 0xff, 0xff, // quality scores
+        ];
+
+        let record = RecordRef(SRC);
+        assert!(record.quality_scores().is_empty());
 
         Ok(())
     }
