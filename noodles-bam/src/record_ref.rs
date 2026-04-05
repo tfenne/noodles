@@ -116,7 +116,7 @@ impl<'a> RecordRef<'a> {
         &self.0[start..end]
     }
 
-    fn data(&self) -> &'a [u8] {
+    pub fn data(&self) -> &'a [u8] {
         let base_count = self.base_count();
 
         let start = bounds::TEMPLATE_LENGTH_RANGE.end

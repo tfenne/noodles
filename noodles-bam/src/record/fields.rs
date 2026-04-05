@@ -5,7 +5,7 @@ pub(crate) mod bounds;
 use std::{io, mem};
 
 use self::bounds::Bounds;
-use super::{Cigar, Data, QualityScores};
+use super::{Cigar, QualityScores};
 
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct Fields {
@@ -66,11 +66,6 @@ impl Fields {
         };
 
         QualityScores::new(src)
-    }
-
-    pub(super) fn data(&self) -> Data<'_> {
-        let src = &self.buf[self.bounds.data_range()];
-        Data::new(src)
     }
 
     pub(crate) fn index(&mut self) -> io::Result<()> {
