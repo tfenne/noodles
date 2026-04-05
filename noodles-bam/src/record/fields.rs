@@ -5,7 +5,6 @@ pub(crate) mod bounds;
 use std::{io, mem};
 
 use self::bounds::Bounds;
-use super::Cigar;
 
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct Fields {
@@ -14,44 +13,6 @@ pub(crate) struct Fields {
 }
 
 impl Fields {
-    fn read_length(&self) -> usize {
-        let src = &self.buf[bounds::READ_LENGTH_RANGE];
-        // SAFETY: `src` is 4 bytes.
-        let n = u32::from_le_bytes(src.try_into().unwrap());
-        usize::try_from(n).unwrap()
-    }
-
-    pub(super) fn cigar(&self) -> Cigar<'_> {
-        use super::data::get_raw_cigar;
-
-        const SKIP: u8 = 3;
-        const SOFT_CLIP: u8 = 4;
-
-        fn decode_op(buf: &[u8; 4]) -> (u8, usize) {
-            let n = u32::from_le_bytes(*buf);
-            ((n & 0x0f) as u8, usize::try_from(n >> 4).unwrap())
-        }
-
-        let src = &self.buf[self.bounds.cigar_range()];
-
-        if let ([chunk_0, chunk_1], []) = src.as_chunks() {
-            let k = self.read_length();
-
-            let op_1 = decode_op(chunk_0);
-            let op_2 = decode_op(chunk_1);
-
-            if op_1 == (SOFT_CLIP, k) && matches!(op_2, (SKIP, _)) {
-                let mut data_src = &self.buf[self.bounds.data_range()];
-
-                if let Ok(Some(buf)) = get_raw_cigar(&mut data_src) {
-                    return Cigar::new(buf);
-                }
-            }
-        }
-
-        Cigar::new(src)
-    }
-
     pub(crate) fn index(&mut self) -> io::Result<()> {
         index(&self.buf[..], &mut self.bounds)
     }
@@ -151,108 +112,6 @@ fn index(buf: &[u8], bounds: &mut Bounds) -> io::Result<()> {
     if buf.len() < bounds.quality_scores_end {
         Err(io::Error::from(io::ErrorKind::UnexpectedEof))
     } else {
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    static DATA: &[u8] = &[
-        0xff, 0xff, 0xff, 0xff, // ref_id = -1
-        0xff, 0xff, 0xff, 0xff, // pos = -1
-        0x02, // l_read_name = 2
-        0xff, // mapq = 255
-        0x48, 0x12, // bin = 4680
-        0x01, 0x00, // n_cigar_op = 1
-        0x04, 0x00, // flag = 4
-        0x04, 0x00, 0x00, 0x00, // l_seq = 0
-        0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
-        0xff, 0xff, 0xff, 0xff, // next_pos = -1
-        0x00, 0x00, 0x00, 0x00, // tlen = 0
-        b'*', 0x00, // read_name = "*\x00"
-        0x40, 0x00, 0x00, 0x00, // cigar = 4M
-        0x12, 0x48, // sequence = ACGT
-        b'N', b'D', b'L', b'S', // quality scores
-    ];
-
-    #[test]
-    fn test_cigar() -> io::Result<()> {
-        let fields = Fields::try_from(Vec::from(DATA))?;
-        let cigar = fields.cigar();
-        assert_eq!(cigar.as_ref(), &DATA[34..38]);
-        Ok(())
-    }
-
-    #[test]
-    fn test_cigar_with_2_cigar_ops() -> io::Result<()> {
-        let data = [
-            0xff, 0xff, 0xff, 0xff, // ref_id = -1
-            0xff, 0xff, 0xff, 0xff, // pos = -1
-            0x02, // l_read_name = 2
-            0xff, // mapq = 255
-            0x48, 0x12, // bin = 4680
-            0x02, 0x00, // n_cigar_op = 2
-            0x04, 0x00, // flag = 4
-            0x04, 0x00, 0x00, 0x00, // l_seq = 0
-            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
-            0xff, 0xff, 0xff, 0xff, // next_pos = -1
-            0x00, 0x00, 0x00, 0x00, // tlen = 0
-            b'*', 0x00, // read_name = "*\x00"
-            0x20, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, // cigar = 2M2M
-            0x12, 0x48, // sequence = ACGT
-            b'N', b'D', b'L', b'S', // quality scores
-        ];
-
-        let fields = Fields::try_from(Vec::from(&data))?;
-        let cigar = fields.cigar();
-        assert_eq!(cigar.as_ref(), &data[34..42]);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_cigar_with_overflowing_cigar() -> io::Result<()> {
-        let data = [
-            0xff, 0xff, 0xff, 0xff, // ref_id = -1
-            0xff, 0xff, 0xff, 0xff, // pos = -1
-            0x02, // l_read_name = 2
-            0xff, // mapq = 255
-            0x48, 0x12, // bin = 4680
-            0x02, 0x00, // n_cigar_op = 2
-            0x04, 0x00, // flag = 4
-            0x04, 0x00, 0x00, 0x00, // l_seq = 0
-            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
-            0xff, 0xff, 0xff, 0xff, // next_pos = -1
-            0x00, 0x00, 0x00, 0x00, // tlen = 0
-            b'*', 0x00, // read_name = "*\x00"
-            0x44, 0x00, 0x00, 0x00, 0x23, 0x00, 0x00, 0x00, // cigar = 2S2N
-            0x12, 0x48, // sequence = ACGT
-            b'N', b'D', b'L', b'S', // quality scores
-            b'C', b'G', b'B', b'I', 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00,
-            0x00, // data["CG"] = [4M]
-        ];
-
-        let fields = Fields::try_from(Vec::from(&data))?;
-        let cigar = fields.cigar();
-        assert_eq!(cigar.as_ref(), &data[56..]);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_index() -> io::Result<()> {
-        let mut fields = Fields::default();
-
-        fields.buf.clear();
-        fields.buf.extend(DATA);
-
-        fields.index()?;
-
-        assert_eq!(fields.bounds.cigar_range(), 34..38);
-        assert_eq!(fields.bounds.data_range(), 44..);
-
         Ok(())
     }
 }

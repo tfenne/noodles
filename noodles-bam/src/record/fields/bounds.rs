@@ -1,4 +1,4 @@
-use std::ops::{Range, RangeFrom};
+use std::ops::Range;
 
 pub const ALIGNMENT_START_RANGE: Range<usize> = 4..8;
 pub const NAME_LENGTH_INDEX: usize = 8;
@@ -16,32 +16,4 @@ pub struct Bounds {
     pub cigar_end: usize,
     pub sequence_end: usize,
     pub quality_scores_end: usize,
-}
-
-impl Bounds {
-    pub fn cigar_range(&self) -> Range<usize> {
-        self.name_end..self.cigar_end
-    }
-
-    pub fn data_range(&self) -> RangeFrom<usize> {
-        self.quality_scores_end..
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_ranges() {
-        let bounds = Bounds {
-            name_end: 34,
-            cigar_end: 38,
-            sequence_end: 40,
-            quality_scores_end: 42,
-        };
-
-        assert_eq!(bounds.cigar_range(), 34..38);
-        assert_eq!(bounds.data_range(), 42..);
-    }
 }

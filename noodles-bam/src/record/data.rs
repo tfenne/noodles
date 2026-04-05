@@ -105,7 +105,7 @@ impl<'a> TryFrom<Data<'a>> for sam::alignment::record_buf::Data {
     }
 }
 
-pub(super) fn get_raw_cigar<'a>(src: &mut &'a [u8]) -> io::Result<Option<&'a [u8]>> {
+pub(crate) fn get_raw_cigar<'a>(src: &mut &'a [u8]) -> io::Result<Option<&'a [u8]>> {
     use noodles_sam::alignment::record::data::field::Type;
 
     use self::field::{

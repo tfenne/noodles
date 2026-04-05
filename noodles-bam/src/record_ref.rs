@@ -92,6 +92,39 @@ impl<'a> RecordRef<'a> {
         }
     }
 
+    pub fn cigar(&self) -> &'a [u8] {
+        use crate::record::data::get_raw_cigar;
+
+        const SKIP: u8 = 3;
+        const SOFT_CLIP: u8 = 4;
+
+        fn decode_op(buf: &[u8; 4]) -> (u8, usize) {
+            let n = u32::from_le_bytes(*buf);
+            ((n & 0x0f) as u8, usize::try_from(n >> 4).unwrap())
+        }
+
+        let start = bounds::TEMPLATE_LENGTH_RANGE.end + self.name_length();
+        let end = start + (self.cigar_op_count() * mem::size_of::<u32>());
+        let src = &self.0[start..end];
+
+        if let ([chunk_0, chunk_1], []) = src.as_chunks() {
+            let k = self.base_count();
+
+            let op_1 = decode_op(chunk_0);
+            let op_2 = decode_op(chunk_1);
+
+            if op_1 == (SOFT_CLIP, k) && matches!(op_2, (SKIP, _)) {
+                let mut data_src = self.data();
+
+                if let Ok(Some(buf)) = get_raw_cigar(&mut data_src) {
+                    return buf;
+                }
+            }
+        }
+
+        src
+    }
+
     pub fn sequence(&self) -> &'a [u8] {
         let start = bounds::TEMPLATE_LENGTH_RANGE.end
             + self.name_length()
@@ -173,6 +206,7 @@ mod tests {
         assert!(record.mate_alignment_start().transpose()?.is_none());
         assert_eq!(record.template_length(), 0);
         assert!(record.name().is_none());
+        assert_eq!(record.cigar(), [0x40, 0x00, 0x00, 0x00]);
         assert_eq!(record.sequence(), &[0x12, 0x48]);
         assert_eq!(record.quality_scores(), b"NDLS");
         assert!(record.data().is_empty());
@@ -202,6 +236,64 @@ mod tests {
 
         let record = RecordRef(SRC);
         assert_eq!(record.name(), Some(b"r0".as_bstr()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_cigar_with_2_cigar_ops() -> io::Result<()> {
+        const SRC: &[u8; 48] = &[
+            0xff, 0xff, 0xff, 0xff, // ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // pos = -1
+            0x02, // l_read_name = 2
+            0xff, // mapq = 255
+            0x48, 0x12, // bin = 4680
+            0x02, 0x00, // n_cigar_op = 2
+            0x04, 0x00, // flag = 4
+            0x04, 0x00, 0x00, 0x00, // l_seq = 0
+            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // next_pos = -1
+            0x00, 0x00, 0x00, 0x00, // tlen = 0
+            b'*', 0x00, // read_name = "*\x00"
+            0x20, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, // cigar = 2M2M
+            0x12, 0x48, // sequence = ACGT
+            b'N', b'D', b'L', b'S', // quality scores
+        ];
+
+        let record = RecordRef(SRC);
+
+        assert_eq!(
+            record.cigar(),
+            [0x20, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00]
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_cigar_with_overflowing_cigar() -> io::Result<()> {
+        const SRC: &[u8; 60] = &[
+            0xff, 0xff, 0xff, 0xff, // ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // pos = -1
+            0x02, // l_read_name = 2
+            0xff, // mapq = 255
+            0x48, 0x12, // bin = 4680
+            0x02, 0x00, // n_cigar_op = 2
+            0x04, 0x00, // flag = 4
+            0x04, 0x00, 0x00, 0x00, // l_seq = 0
+            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // next_pos = -1
+            0x00, 0x00, 0x00, 0x00, // tlen = 0
+            b'*', 0x00, // read_name = "*\x00"
+            0x44, 0x00, 0x00, 0x00, 0x23, 0x00, 0x00, 0x00, // cigar = 2S2N
+            0x12, 0x48, // sequence = ACGT
+            b'N', b'D', b'L', b'S', // quality scores
+            b'C', b'G', b'B', b'I', 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00,
+            0x00, // data["CG"] = [4M]
+        ];
+
+        let record = RecordRef(SRC);
+        assert_eq!(record.cigar(), [0x40, 0x00, 0x00, 0x00]);
 
         Ok(())
     }
