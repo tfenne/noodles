@@ -16,19 +16,14 @@ use noodles_sam::{
     alignment::record::{Flags, MappingQuality},
 };
 
-pub(crate) use self::fields::Fields;
 pub use self::{cigar::Cigar, data::Data, quality_scores::QualityScores, sequence::Sequence};
 use super::RecordRef;
 
 /// A BAM record.
-#[derive(Clone, Default, Eq, PartialEq)]
-pub struct Record(Fields);
+#[derive(Clone, Eq, PartialEq)]
+pub struct Record(pub(crate) Vec<u8>);
 
 impl Record {
-    pub(crate) fn fields_mut(&mut self) -> &mut Fields {
-        &mut self.0
-    }
-
     /// Returns the reference sequence ID.
     ///
     /// # Examples
@@ -195,7 +190,26 @@ impl Record {
     }
 
     fn as_record_ref(&self) -> RecordRef<'_> {
-        RecordRef(&self.0.buf)
+        RecordRef(&self.0)
+    }
+}
+
+impl Default for Record {
+    fn default() -> Self {
+        Self(vec![
+            0xff, 0xff, 0xff, 0xff, // ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // pos = -1
+            0x02, // l_read_name = 2
+            0xff, // mapq = 255
+            0x48, 0x12, // bin = 4680
+            0x00, 0x00, // n_cigar_op = 0
+            0x04, 0x00, // flag = 4
+            0x00, 0x00, 0x00, 0x00, // l_seq = 0
+            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
+            0xff, 0xff, 0xff, 0xff, // next_pos = -1
+            0x00, 0x00, 0x00, 0x00, // tlen = 0
+            b'*', 0x00, // read_name = "*\x00"
+        ])
     }
 }
 

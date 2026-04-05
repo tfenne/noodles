@@ -2,32 +2,6 @@
 
 pub(crate) mod bounds;
 
-#[derive(Clone, Eq, PartialEq)]
-pub(crate) struct Fields {
-    pub(crate) buf: Vec<u8>,
-}
-
-impl Default for Fields {
-    fn default() -> Self {
-        let buf = vec![
-            0xff, 0xff, 0xff, 0xff, // ref_id = -1
-            0xff, 0xff, 0xff, 0xff, // pos = -1
-            0x02, // l_read_name = 2
-            0xff, // mapq = 255
-            0x48, 0x12, // bin = 4680
-            0x00, 0x00, // n_cigar_op = 0
-            0x04, 0x00, // flag = 4
-            0x00, 0x00, 0x00, 0x00, // l_seq = 0
-            0xff, 0xff, 0xff, 0xff, // next_ref_id = -1
-            0xff, 0xff, 0xff, 0xff, // next_pos = -1
-            0x00, 0x00, 0x00, 0x00, // tlen = 0
-            b'*', 0x00, // read_name = "*\x00"
-        ];
-
-        Self { buf }
-    }
-}
-
 pub(crate) fn get_reference_sequence_id(src: [u8; 4]) -> Option<i32> {
     const UNMAPPED: i32 = -1;
 

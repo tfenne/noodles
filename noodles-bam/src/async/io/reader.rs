@@ -213,9 +213,9 @@ where
     /// # }
     /// ```
     pub async fn read_record(&mut self, record: &mut Record) -> io::Result<usize> {
-        let fields = record.fields_mut();
+        let dst = &mut record.0;
 
-        let block_size = match read_record(&mut self.inner, &mut fields.buf).await? {
+        let block_size = match read_record(&mut self.inner, dst).await? {
             0 => return Ok(0),
             n => n,
         };
