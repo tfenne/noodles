@@ -1,12 +1,22 @@
 #![allow(dead_code)]
 
-use std::{io, mem};
+use std::{io, mem, ops::Range};
 
 use bstr::{BStr, ByteSlice};
 use noodles_core::Position;
 use noodles_sam::alignment::record::Flags;
 
-use super::record::{fields::bounds, try_to_position, try_to_reference_sequence_id};
+use super::record::{try_to_position, try_to_reference_sequence_id};
+
+const ALIGNMENT_START_RANGE: Range<usize> = 4..8;
+const NAME_LENGTH_INDEX: usize = 8;
+const MAPPING_QUALITY_INDEX: usize = 9;
+const CIGAR_OP_COUNT_RANGE: Range<usize> = 12..14;
+const FLAGS_RANGE: Range<usize> = 14..16;
+const READ_LENGTH_RANGE: Range<usize> = 16..20;
+const MATE_REFERENCE_SEQUENCE_ID_RANGE: Range<usize> = 20..24;
+const MATE_ALIGNMENT_START_RANGE: Range<usize> = 24..28;
+const TEMPLATE_LENGTH_RANGE: Range<usize> = 28..32;
 
 pub struct RecordRef<'a>(pub &'a [u8]);
 
@@ -18,59 +28,59 @@ impl<'a> RecordRef<'a> {
     }
 
     pub fn alignment_start(&self) -> Option<io::Result<Position>> {
-        let src = &self.0[bounds::ALIGNMENT_START_RANGE];
+        let src = &self.0[ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
     }
 
     fn name_length(&self) -> usize {
-        let n = &self.0[bounds::NAME_LENGTH_INDEX];
+        let n = &self.0[NAME_LENGTH_INDEX];
         usize::from(*n)
     }
 
     pub fn mapping_quality(&self) -> Option<u8> {
         const MISSING: u8 = 255;
 
-        match self.0[bounds::MAPPING_QUALITY_INDEX] {
+        match self.0[MAPPING_QUALITY_INDEX] {
             MISSING => None,
             n => Some(n),
         }
     }
 
     fn cigar_op_count(&self) -> usize {
-        let src = &self.0[bounds::CIGAR_OP_COUNT_RANGE];
+        let src = &self.0[CIGAR_OP_COUNT_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u16>()`.
         usize::from(u16::from_le_bytes(src.try_into().unwrap()))
     }
 
     pub fn flags(&self) -> Flags {
-        let src = &self.0[bounds::FLAGS_RANGE];
+        let src = &self.0[FLAGS_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u16>()`.
         let n = u16::from_le_bytes(src.try_into().unwrap());
         Flags::from(n)
     }
 
     pub(crate) fn base_count(&self) -> usize {
-        let src = &self.0[bounds::READ_LENGTH_RANGE];
+        let src = &self.0[READ_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u32>()`.
         let n = u32::from_le_bytes(src.try_into().unwrap());
         usize::try_from(n).unwrap()
     }
 
     pub fn mate_reference_sequence_id(&self) -> Option<io::Result<usize>> {
-        let src = &self.0[bounds::MATE_REFERENCE_SEQUENCE_ID_RANGE];
+        let src = &self.0[MATE_REFERENCE_SEQUENCE_ID_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_reference_sequence_id(src.try_into().unwrap()).map(try_to_reference_sequence_id)
     }
 
     pub fn mate_alignment_start(&self) -> Option<io::Result<Position>> {
-        let src = &self.0[bounds::MATE_ALIGNMENT_START_RANGE];
+        let src = &self.0[MATE_ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
     }
 
     pub fn template_length(&self) -> i32 {
-        let src = &self.0[bounds::TEMPLATE_LENGTH_RANGE];
+        let src = &self.0[TEMPLATE_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         i32::from_le_bytes(src.try_into().unwrap())
     }
@@ -80,7 +90,7 @@ impl<'a> RecordRef<'a> {
         const MISSING: &[u8] = &[b'*', NUL];
 
         let read_name_len = self.name_length();
-        let start = bounds::TEMPLATE_LENGTH_RANGE.end;
+        let start = TEMPLATE_LENGTH_RANGE.end;
         let end = start + read_name_len;
 
         match &self.0[start..end] {
@@ -100,7 +110,7 @@ impl<'a> RecordRef<'a> {
             ((n & 0x0f) as u8, usize::try_from(n >> 4).unwrap())
         }
 
-        let start = bounds::TEMPLATE_LENGTH_RANGE.end + self.name_length();
+        let start = TEMPLATE_LENGTH_RANGE.end + self.name_length();
         let end = start + (self.cigar_op_count() * mem::size_of::<u32>());
         let src = &self.0[start..end];
 
@@ -123,7 +133,7 @@ impl<'a> RecordRef<'a> {
     }
 
     pub fn sequence(&self) -> &'a [u8] {
-        let start = bounds::TEMPLATE_LENGTH_RANGE.end
+        let start = TEMPLATE_LENGTH_RANGE.end
             + self.name_length()
             + (self.cigar_op_count() * mem::size_of::<u32>());
 
@@ -138,7 +148,7 @@ impl<'a> RecordRef<'a> {
 
         let base_count = self.base_count();
 
-        let start = bounds::TEMPLATE_LENGTH_RANGE.end
+        let start = TEMPLATE_LENGTH_RANGE.end
             + self.name_length()
             + (self.cigar_op_count() * mem::size_of::<u32>())
             + base_count.div_ceil(2);
@@ -159,7 +169,7 @@ impl<'a> RecordRef<'a> {
     pub fn data(&self) -> &'a [u8] {
         let base_count = self.base_count();
 
-        let start = bounds::TEMPLATE_LENGTH_RANGE.end
+        let start = TEMPLATE_LENGTH_RANGE.end
             + self.name_length()
             + (self.cigar_op_count() * mem::size_of::<u32>())
             + base_count.div_ceil(2)

@@ -1,6 +1,7 @@
 use std::{
     io::{self, Read},
     mem,
+    ops::Range,
 };
 
 pub(super) fn read_record<R>(reader: &mut R, buf: &mut Vec<u8>) -> io::Result<usize>
@@ -59,21 +60,22 @@ where
 }
 
 pub(crate) fn validate(src: &[u8]) -> io::Result<()> {
-    use crate::record::fields::bounds;
-
-    const MIN_BUF_LENGTH: usize = bounds::TEMPLATE_LENGTH_RANGE.end;
+    const MIN_BUF_LENGTH: usize = 32;
+    const NAME_LENGTH_INDEX: usize = 8;
+    const CIGAR_OP_COUNT_RANGE: Range<usize> = 12..14;
+    const READ_LENGTH_RANGE: Range<usize> = 16..20;
 
     if src.len() < MIN_BUF_LENGTH {
         return Err(io::Error::from(io::ErrorKind::UnexpectedEof));
     }
 
-    let name_len = usize::from(src[bounds::NAME_LENGTH_INDEX]);
+    let name_len = usize::from(src[NAME_LENGTH_INDEX]);
 
-    let buf = &src[bounds::CIGAR_OP_COUNT_RANGE];
+    let buf = &src[CIGAR_OP_COUNT_RANGE];
     // SAFETY: `buf.len() == mem::size_of::<u16>()`.
     let cigar_op_count = usize::from(u16::from_le_bytes(buf.try_into().unwrap()));
 
-    let buf = &src[bounds::READ_LENGTH_RANGE];
+    let buf = &src[READ_LENGTH_RANGE];
     // SAFETY: `buf.len() == mem::size_of::<u32>()`.
     let base_count = usize::try_from(u32::from_le_bytes(buf.try_into().unwrap()))
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;

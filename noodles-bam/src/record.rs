@@ -3,7 +3,6 @@
 mod cigar;
 pub mod codec;
 pub mod data;
-pub mod fields;
 mod quality_scores;
 mod sequence;
 
