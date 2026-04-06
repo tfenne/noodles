@@ -1,5 +1,7 @@
 #![expect(dead_code)]
 
+mod four_bit_packed;
+
 enum SequenceRef<'a> {
     FourBitPacked(&'a [u8], usize),
     Raw(&'a [u8]),
@@ -33,6 +35,15 @@ impl SequenceRef<'_> {
                 }
             }
             Self::Raw(src) => src.get(i).copied(),
+        }
+    }
+
+    fn iter(&self) -> Box<dyn Iterator<Item = u8> + '_> {
+        match self {
+            Self::FourBitPacked(src, base_count) => {
+                Box::new(four_bit_packed::Iter::new(src, *base_count))
+            }
+            Self::Raw(src) => Box::new(src.iter().copied()),
         }
     }
 }
