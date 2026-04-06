@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{io, mem, ops::Range};
 
 use bstr::{BStr, ByteSlice};
