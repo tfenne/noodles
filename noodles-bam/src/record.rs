@@ -189,7 +189,7 @@ impl Record {
     }
 
     fn as_record_ref(&self) -> RecordRef<'_> {
-        RecordRef(&self.0)
+        RecordRef::new(&self.0)
     }
 }
 
@@ -353,8 +353,8 @@ mod tests {
 
         encode(&mut buf, &header, &record)?;
 
-        let record = RecordRef(&buf);
-        assert_eq!(Cigar::new(record.cigar()).len(), BASE_COUNT);
+        let record = Record(buf);
+        assert_eq!(record.cigar().len(), BASE_COUNT);
 
         Ok(())
     }

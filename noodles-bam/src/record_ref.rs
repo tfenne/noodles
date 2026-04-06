@@ -18,9 +18,13 @@ const MATE_REFERENCE_SEQUENCE_ID_RANGE: Range<usize> = 20..24;
 const MATE_ALIGNMENT_START_RANGE: Range<usize> = 24..28;
 const TEMPLATE_LENGTH_RANGE: Range<usize> = 28..32;
 
-pub struct RecordRef<'a>(pub &'a [u8]);
+pub struct RecordRef<'a>(&'a [u8]);
 
 impl<'a> RecordRef<'a> {
+    pub fn new(src: &'a [u8]) -> Self {
+        Self(src)
+    }
+
     pub fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
         // SAFETY: `self.0.len() >= mem::size_of::<i32>()`.
         let src = self.0.first_chunk().unwrap();
