@@ -1,5 +1,7 @@
 use std::{iter::FusedIterator, slice};
 
+use super::decode_base;
+
 pub struct Iter<'a> {
     iter: slice::Iter<'a, u8>,
     i: usize,
@@ -22,8 +24,6 @@ impl Iterator for Iter<'_> {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {
-        use super::super::decode_base;
-
         if self.i >= self.base_count {
             return None;
         }
