@@ -9,7 +9,10 @@ enum SequenceRef<'a> {
 
 impl SequenceRef<'_> {
     fn is_empty(&self) -> bool {
-        self.len() == 0
+        match self {
+            Self::FourBitPacked(_, base_count) => *base_count == 0,
+            Self::Raw(src) => src.is_empty(),
+        }
     }
 
     fn len(&self) -> usize {
