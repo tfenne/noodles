@@ -12,7 +12,7 @@ pub struct RecordRef<'a>(pub &'a [u8]);
 
 impl<'a> RecordRef<'a> {
     pub fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
-        // SAFETY: `self.head.len() >= mem::size_of::<i32>()`.
+        // SAFETY: `self.0.len() >= mem::size_of::<i32>()`.
         let src = self.0.first_chunk().unwrap();
         get_reference_sequence_id(*src).map(try_to_reference_sequence_id)
     }
