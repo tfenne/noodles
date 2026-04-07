@@ -35,6 +35,12 @@ impl<'a> FourBitPacked<'a> {
     }
 }
 
+impl<'a> AsRef<[u8]> for FourBitPacked<'a> {
+    fn as_ref(&self) -> &'a [u8] {
+        self.src
+    }
+}
+
 fn decode_base(n: u8) -> u8 {
     const BASE_LUT: &[u8; 16] = b"=ACMGRSVTWYHKDBN";
     BASE_LUT[usize::from(n & 0x0f)]
