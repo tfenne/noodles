@@ -8,15 +8,15 @@ pub struct FourBitPacked<'a> {
 }
 
 impl<'a> FourBitPacked<'a> {
-    pub(super) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.base_count == 0
     }
 
-    pub(super) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.base_count
     }
 
-    pub(super) fn get(&self, i: usize) -> Option<u8> {
+    pub fn get(&self, i: usize) -> Option<u8> {
         if i < self.base_count
             && let Some(&n) = self.src.get(i / 2)
         {
@@ -30,7 +30,7 @@ impl<'a> FourBitPacked<'a> {
         }
     }
 
-    pub(super) fn iter(&self) -> Iter<'a> {
+    pub fn iter(&self) -> Iter<'a> {
         Iter::new(self.src, self.base_count)
     }
 }
