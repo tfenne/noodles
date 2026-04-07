@@ -25,6 +25,8 @@ use crate::{
     },
 };
 
+pub use self::sequence_ref::SequenceRef;
+
 /// An alignment record.
 pub trait Record {
     /// Returns the name.
@@ -123,6 +125,11 @@ pub trait Record {
             Some(Err(e)) => Some(Err(e)),
             None => Some(Ok(start)),
         }
+    }
+
+    #[doc(hidden)]
+    fn sequence_ref(&self) -> SequenceRef<'_> {
+        SequenceRef::Sequence(self.sequence())
     }
 }
 
