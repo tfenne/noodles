@@ -132,11 +132,9 @@ where
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
     }
 
-    let sequence = record.sequence();
-
     // seq
     let read_length = record.cigar().read_length()?;
-    write_sequence(dst, read_length, sequence)?;
+    write_sequence(dst, read_length, record.sequence_ref())?;
 
     // qual
     write_quality_scores(dst, base_count, record.quality_scores())?;

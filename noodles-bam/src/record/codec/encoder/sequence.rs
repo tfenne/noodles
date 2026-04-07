@@ -1,6 +1,6 @@
 use std::io;
 
-use noodles_sam::alignment::record::Sequence;
+use noodles_sam::alignment::record::{Sequence, SequenceRef};
 
 use super::num::{write_u8, write_u32_le};
 
@@ -13,16 +13,11 @@ pub(super) fn write_length(dst: &mut Vec<u8>, base_count: usize) -> io::Result<(
     Ok(())
 }
 
-pub(super) fn write_sequence<S>(
+pub(super) fn write_sequence(
     dst: &mut Vec<u8>,
     read_length: usize,
-    sequence: S,
-) -> io::Result<()>
-where
-    S: Sequence,
-{
-    const EQ: u8 = b'=';
-
+    sequence: SequenceRef<'_>,
+) -> io::Result<()> {
     if sequence.is_empty() {
         return Ok(());
     }
@@ -35,6 +30,25 @@ where
             "read length-sequence length mismatch",
         ));
     }
+
+    match sequence {
+        SequenceRef::FourBitPacked(s) => write_four_bit_packed_sequence(dst, s.as_ref()),
+        SequenceRef::Raw(_) => todo!(),
+        SequenceRef::Sequence(s) => write_generic_sequence(dst, s)?,
+    }
+
+    Ok(())
+}
+
+fn write_four_bit_packed_sequence(dst: &mut Vec<u8>, src: &[u8]) {
+    dst.extend(src);
+}
+
+fn write_generic_sequence<S>(dst: &mut Vec<u8>, sequence: S) -> io::Result<()>
+where
+    S: Sequence,
+{
+    const EQ: u8 = b'=';
 
     let mut bases = sequence.iter();
 
@@ -109,7 +123,8 @@ mod tests {
     fn test_write_sequence() -> Result<(), Box<dyn std::error::Error>> {
         fn t(buf: &mut Vec<u8>, sequence: &SequenceBuf, expected: &[u8]) -> io::Result<()> {
             buf.clear();
-            write_sequence(buf, sequence.len(), sequence)?;
+            let s = SequenceRef::Sequence(Box::new(sequence));
+            write_sequence(buf, s.len(), s)?;
             assert_eq!(buf, expected);
             Ok(())
         }
@@ -121,17 +136,28 @@ mod tests {
         t(&mut buf, &SequenceBuf::from(b"ACGT"), &[0x12, 0x48])?;
 
         buf.clear();
-        write_sequence(&mut buf, 2, &SequenceBuf::default())?;
+        let sequence = SequenceBuf::default();
+        let s = SequenceRef::Sequence(Box::new(&sequence));
+        write_sequence(&mut buf, 2, s)?;
         assert!(buf.is_empty());
 
         buf.clear();
         let sequence = SequenceBuf::from(b"A");
+        let s = SequenceRef::Sequence(Box::new(&sequence));
         assert!(matches!(
-            write_sequence(&mut buf, 2, &sequence),
+            write_sequence(&mut buf, 2, s),
             Err(e) if e.kind() == io::ErrorKind::InvalidInput,
         ));
 
         Ok(())
+    }
+
+    #[test]
+    fn test_write_four_bit_packed_sequence() {
+        let mut dst = Vec::new();
+        let sequence = &[0x12, 0x48]; // ACGT
+        write_four_bit_packed_sequence(&mut dst, sequence);
+        assert_eq!(dst, sequence);
     }
 
     #[test]
