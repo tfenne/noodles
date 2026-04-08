@@ -4,6 +4,8 @@ use noodles_sam::alignment::record::{Sequence, SequenceRef};
 
 use super::num::{write_u8, write_u32_le};
 
+const EQ: u8 = b'=';
+
 pub(super) fn write_length(dst: &mut Vec<u8>, base_count: usize) -> io::Result<()> {
     let n =
         u32::try_from(base_count).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
@@ -33,7 +35,7 @@ pub(super) fn write_sequence(
 
     match sequence {
         SequenceRef::FourBitPacked(s) => write_four_bit_packed_sequence(dst, s.as_ref()),
-        SequenceRef::Raw(_) => todo!(),
+        SequenceRef::Raw(s) => write_raw_sequence(dst, s),
         SequenceRef::Sequence(s) => write_generic_sequence(dst, s)?,
     }
 
@@ -44,12 +46,27 @@ fn write_four_bit_packed_sequence(dst: &mut Vec<u8>, src: &[u8]) {
     dst.extend(src);
 }
 
+fn write_raw_sequence(dst: &mut Vec<u8>, src: &[u8]) {
+    let (chunks, remainder) = src.as_chunks::<2>();
+
+    dst.extend(
+        chunks
+            .iter()
+            .map(|&[l, r]| (encode_base(l) << 4) | encode_base(r)),
+    );
+
+    if let &[l] = remainder {
+        // § 4.2.3 "SEQ and QUAL encoding" (2021-06-03): "When `l_seq` is odd the bottom 4 bits of
+        // the last byte are undefined, but we recommend writing these as zero."
+        let b = (encode_base(l) << 4) | encode_base(EQ);
+        dst.push(b);
+    }
+}
+
 fn write_generic_sequence<S>(dst: &mut Vec<u8>, sequence: S) -> io::Result<()>
 where
     S: Sequence,
 {
-    const EQ: u8 = b'=';
-
     let mut bases = sequence.iter();
 
     while let Some(l) = bases.next() {
@@ -158,6 +175,21 @@ mod tests {
         let sequence = &[0x12, 0x48]; // ACGT
         write_four_bit_packed_sequence(&mut dst, sequence);
         assert_eq!(dst, sequence);
+    }
+
+    #[test]
+    fn test_write_raw_sequence() {
+        let mut dst = Vec::new();
+
+        dst.clear();
+        let sequence = b"ACG";
+        write_raw_sequence(&mut dst, sequence);
+        assert_eq!(dst, [0x12, 0x40]);
+
+        dst.clear();
+        let sequence = b"ACGT";
+        write_raw_sequence(&mut dst, sequence);
+        assert_eq!(dst, [0x12, 0x48]);
     }
 
     #[test]
