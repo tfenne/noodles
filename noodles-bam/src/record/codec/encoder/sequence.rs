@@ -49,16 +49,12 @@ fn write_four_bit_packed_sequence(dst: &mut Vec<u8>, src: &[u8]) {
 fn write_raw_sequence(dst: &mut Vec<u8>, src: &[u8]) {
     let (chunks, remainder) = src.as_chunks::<2>();
 
-    dst.extend(
-        chunks
-            .iter()
-            .map(|&[l, r]| (encode_base(l) << 4) | encode_base(r)),
-    );
+    dst.extend(chunks.iter().map(|&[l, r]| pack_bases(l, r)));
 
     if let &[l] = remainder {
         // § 4.2.3 "SEQ and QUAL encoding" (2021-06-03): "When `l_seq` is odd the bottom 4 bits of
         // the last byte are undefined, but we recommend writing these as zero."
-        let b = (encode_base(l) << 4) | encode_base(EQ);
+        let b = pack_bases(l, EQ);
         dst.push(b);
     }
 }
@@ -73,11 +69,15 @@ where
         // § 4.2.3 "SEQ and QUAL encoding" (2021-06-03): "When `l_seq` is odd the bottom 4 bits of
         // the last byte are undefined, but we recommend writing these as zero."
         let r = bases.next().unwrap_or(EQ);
-        let n = (encode_base(l) << 4) | encode_base(r);
+        let n = pack_bases(l, r);
         write_u8(dst, n);
     }
 
     Ok(())
+}
+
+fn pack_bases(l: u8, r: u8) -> u8 {
+    (encode_base(l) << 4) | encode_base(r)
 }
 
 // § 4.2.3 "SEQ and QUAL encoding" (2023-11-16): "The case-insensitive base codes [...] are mapped
@@ -190,6 +190,11 @@ mod tests {
         let sequence = b"ACGT";
         write_raw_sequence(&mut dst, sequence);
         assert_eq!(dst, [0x12, 0x48]);
+    }
+
+    #[test]
+    fn test_pack_bases() {
+        assert_eq!(pack_bases(b'A', b'C'), 0x12);
     }
 
     #[test]
