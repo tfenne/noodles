@@ -311,6 +311,10 @@ impl crate::alignment::Record for Record {
         Box::new(self.sequence())
     }
 
+    fn sequence_ref(&self) -> crate::alignment::record::SequenceRef<'_> {
+        crate::alignment::record::SequenceRef::Raw(self.0.sequence())
+    }
+
     fn quality_scores(&self) -> Box<dyn crate::alignment::record::QualityScores + '_> {
         Box::new(self.quality_scores())
     }
