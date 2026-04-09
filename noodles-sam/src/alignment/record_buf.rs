@@ -552,6 +552,10 @@ impl Record for RecordBuf {
         Box::new(self.sequence())
     }
 
+    fn sequence_ref(&self) -> super::record::SequenceRef<'_> {
+        super::record::SequenceRef::Raw(self.sequence.as_ref())
+    }
+
     fn quality_scores(&self) -> Box<dyn super::record::QualityScores + '_> {
         Box::new(self.quality_scores())
     }
