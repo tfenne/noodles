@@ -9,7 +9,7 @@ use lexical_core::FromLexical;
 use noodles_core::Position;
 
 pub(crate) use self::bounds::Bounds;
-use super::{Cigar, Data, QualityScores, Sequence};
+use super::{Cigar, Data, QualityScores};
 use crate::Header;
 
 const MISSING: &[u8] = b"*";
@@ -103,13 +103,11 @@ impl Fields {
         parse_int(buf)
     }
 
-    pub fn sequence(&self) -> Sequence<'_> {
-        let buf = match &self.buf[self.bounds.sequence_range()] {
+    pub fn sequence(&self) -> &[u8] {
+        match &self.buf[self.bounds.sequence_range()] {
             MISSING => b"",
             buf => buf,
-        };
-
-        Sequence::new(buf)
+        }
     }
 
     pub fn quality_scores(&self) -> QualityScores<'_> {

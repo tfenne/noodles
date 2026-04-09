@@ -199,7 +199,7 @@ impl Record {
     /// assert!(record.sequence().is_empty());
     /// ```
     pub fn sequence(&self) -> Sequence<'_> {
-        self.0.sequence()
+        Sequence::new(self.0.sequence())
     }
 
     /// Returns the quality scores.
