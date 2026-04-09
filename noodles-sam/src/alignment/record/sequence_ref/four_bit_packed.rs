@@ -51,6 +51,44 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_is_empty() {
+        let sequence = FourBitPacked {
+            src: &[],
+            base_count: 0,
+        };
+        assert!(sequence.is_empty());
+
+        let sequence = FourBitPacked {
+            src: &[0x12, 0x40],
+            base_count: 3,
+        };
+        assert!(!sequence.is_empty());
+    }
+
+    #[test]
+    fn test_len() {
+        let sequence = FourBitPacked {
+            src: &[0x12, 0x40],
+            base_count: 3,
+        };
+
+        assert_eq!(sequence.len(), 3);
+    }
+
+    #[test]
+    fn test_get() {
+        let sequence = FourBitPacked {
+            src: &[0x12, 0x40],
+            base_count: 3,
+        };
+
+        assert_eq!(sequence.get(0), Some(b'A'));
+        assert_eq!(sequence.get(1), Some(b'C'));
+        assert_eq!(sequence.get(2), Some(b'G'));
+        assert!(sequence.get(3).is_none());
+    }
+
+    #[test]
     fn test_decode_base() {
         const EXPECTED_BASES: &[u8; 16] = b"=ACMGRSVTWYHKDBN";
 
