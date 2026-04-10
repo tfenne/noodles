@@ -27,6 +27,16 @@ where
         ));
     }
 
+    write_generic_sequence(writer, sequence)?;
+
+    Ok(())
+}
+
+fn write_generic_sequence<W, S>(writer: &mut W, sequence: S) -> io::Result<()>
+where
+    W: Write,
+    S: Sequence,
+{
     for base in sequence.iter() {
         if !is_valid_base(base) {
             return Err(io::Error::from(io::ErrorKind::InvalidInput));
