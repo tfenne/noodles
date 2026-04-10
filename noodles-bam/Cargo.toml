@@ -34,6 +34,7 @@ noodles-csi = { path = "../noodles-csi", version = "0.55.0" }
 noodles-sam = { path = "../noodles-sam", version = "0.84.0" }
 
 [dev-dependencies]
+criterion.workspace = true
 flate2.workspace = true
 noodles-sam = { path = "../noodles-sam", version = "0.84.0", features = ["async"] }
 tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread"] }
@@ -43,6 +44,10 @@ workspace = true
 
 [package.metadata.docs.rs]
 features = ["async"]
+
+[[bench]]
+name = "read_record"
+harness = false
 
 [[example]]
 name = "bam_count_async"
