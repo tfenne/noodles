@@ -28,7 +28,7 @@ where
 
     match sequence {
         SequenceRef::FourBitPacked(sequence) => write_four_bit_packed_sequence(writer, &sequence)?,
-        SequenceRef::Raw(_) => todo!(),
+        SequenceRef::Raw(sequence) => write_raw_sequence(writer, sequence)?,
         SequenceRef::Sequence(sequence) => write_generic_sequence(writer, sequence)?,
     }
 
@@ -42,6 +42,21 @@ where
     for base in sequence.iter() {
         // SAFETY: `base` is guaranteed to be a valid base.
         writer.write_all(&[base])?;
+    }
+
+    Ok(())
+}
+
+fn write_raw_sequence<W>(writer: &mut W, sequence: &[u8]) -> io::Result<()>
+where
+    W: Write,
+{
+    if !sequence.iter().all(|&b| is_valid_base(b)) {
+        return Err(io::Error::from(io::ErrorKind::InvalidInput));
+    }
+
+    for &b in sequence {
+        writer.write_all(&[b])?;
     }
 
     Ok(())
@@ -126,6 +141,23 @@ mod tests {
         write_four_bit_packed_sequence(&mut buf, &sequence)?;
 
         assert_eq!(buf, b"ACGT");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_write_raw_sequence() -> io::Result<()> {
+        let mut buf = Vec::new();
+
+        buf.clear();
+        write_raw_sequence(&mut buf, b"ACGT")?;
+        assert_eq!(buf, b"ACGT");
+
+        buf.clear();
+        assert!(matches!(
+            write_raw_sequence(&mut buf, &[0xf0, 0x9f, 0x8d, 0x9c]),
+            Err(e) if e.kind() == io::ErrorKind::InvalidInput
+        ));
 
         Ok(())
     }
