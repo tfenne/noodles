@@ -3,8 +3,8 @@ mod iter;
 use self::iter::Iter;
 
 pub struct FourBitPacked<'a> {
-    src: &'a [u8],
-    base_count: usize,
+    pub(crate) src: &'a [u8],
+    pub(crate) base_count: usize,
 }
 
 impl<'a> FourBitPacked<'a> {

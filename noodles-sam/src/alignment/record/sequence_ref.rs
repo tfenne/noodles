@@ -1,6 +1,6 @@
 mod four_bit_packed;
 
-use self::four_bit_packed::FourBitPacked;
+pub use self::four_bit_packed::FourBitPacked;
 use super::Sequence;
 
 #[doc(hidden)]

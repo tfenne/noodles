@@ -85,12 +85,11 @@ where
     let template_length = record.template_length()?;
     write_template_length(writer, template_length)?;
 
-    let sequence = record.sequence();
-    let base_count = sequence.len();
-
     writer.write_all(DELIMITER)?;
     let read_length = cigar.read_length()?;
-    write_sequence(writer, read_length, sequence)?;
+    write_sequence(writer, read_length, record.sequence_ref())?;
+
+    let base_count = record.sequence().len();
 
     writer.write_all(DELIMITER)?;
     write_quality_scores(writer, base_count, record.quality_scores())?;

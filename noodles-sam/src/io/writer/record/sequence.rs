@@ -1,16 +1,15 @@
 use std::io::{self, Write};
 
 use super::MISSING;
-use crate::alignment::record::Sequence;
+use crate::alignment::record::{Sequence, SequenceRef, sequence_ref::FourBitPacked};
 
-pub(super) fn write_sequence<W, S>(
+pub(super) fn write_sequence<W>(
     writer: &mut W,
     read_length: usize,
-    sequence: S,
+    sequence: SequenceRef<'_>,
 ) -> io::Result<()>
 where
     W: Write,
-    S: Sequence,
 {
     // § 1.4.10 "`SEQ`" (2022-08-22): "This field can be a '*' when the sequence is not stored."
     if sequence.is_empty() {
@@ -27,7 +26,23 @@ where
         ));
     }
 
-    write_generic_sequence(writer, sequence)?;
+    match sequence {
+        SequenceRef::FourBitPacked(sequence) => write_four_bit_packed_sequence(writer, &sequence)?,
+        SequenceRef::Raw(_) => todo!(),
+        SequenceRef::Sequence(sequence) => write_generic_sequence(writer, sequence)?,
+    }
+
+    Ok(())
+}
+
+fn write_four_bit_packed_sequence<W>(writer: &mut W, sequence: &FourBitPacked) -> io::Result<()>
+where
+    W: Write,
+{
+    for base in sequence.iter() {
+        // SAFETY: `base` is guaranteed to be a valid base.
+        writer.write_all(&[base])?;
+    }
 
     Ok(())
 }
@@ -63,31 +78,54 @@ mod tests {
         let mut buf = Vec::new();
 
         buf.clear();
-        write_sequence(&mut buf, 0, &SequenceBuf::default())?;
+        let sequence = SequenceBuf::default();
+        let s = SequenceRef::Sequence(Box::new(&sequence));
+        write_sequence(&mut buf, 0, s)?;
         assert_eq!(buf, b"*");
 
         buf.clear();
         let sequence = SequenceBuf::from(b"ACGT");
-        write_sequence(&mut buf, 4, &sequence)?;
+        let s = SequenceRef::Sequence(Box::new(&sequence));
+        write_sequence(&mut buf, 4, s)?;
         assert_eq!(buf, b"ACGT");
 
         buf.clear();
         let sequence = SequenceBuf::from(b"ACGT");
-        write_sequence(&mut buf, 0, &sequence)?;
+        let s = SequenceRef::Sequence(Box::new(&sequence));
+        write_sequence(&mut buf, 0, s)?;
         assert_eq!(buf, b"ACGT");
 
         buf.clear();
+        let sequence = SequenceBuf::from(b"ACGT");
+        let s = SequenceRef::Sequence(Box::new(&sequence));
         assert!(matches!(
-            write_sequence(&mut buf, 1, &sequence),
+            write_sequence(&mut buf, 1, s),
             Err(e) if e.kind() == io::ErrorKind::InvalidInput,
         ));
 
-        let sequence = SequenceBuf::from(vec![b'!']);
         buf.clear();
+        let sequence = SequenceBuf::from(vec![b'!']);
+        let s = SequenceRef::Sequence(Box::new(&sequence));
         assert!(matches!(
-            write_sequence(&mut buf, 1, &sequence),
+            write_sequence(&mut buf, 1, s),
             Err(e) if e.kind() == io::ErrorKind::InvalidInput,
         ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_write_four_bit_packed_sequence() -> io::Result<()> {
+        let mut buf = Vec::new();
+
+        let sequence = FourBitPacked {
+            src: &[0x12, 0x48], // ACGT
+            base_count: 4,
+        };
+
+        write_four_bit_packed_sequence(&mut buf, &sequence)?;
+
+        assert_eq!(buf, b"ACGT");
 
         Ok(())
     }
