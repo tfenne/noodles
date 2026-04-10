@@ -33,6 +33,20 @@ pub(super) fn read_length(src: &mut &[u8]) -> Result<usize, DecodeError> {
     read_u32_le(src).and_then(|n| usize::try_from(n).map_err(DecodeError::InvalidLength))
 }
 
+const NIBBLE_PAIRS: [[u8; 2]; 256] = {
+    const BASES: [u8; 16] = *b"=ACMGRSVTWYHKDBN";
+
+    let mut table = [[0u8; 2]; 256];
+    let mut i = 0;
+
+    while i < 256 {
+        table[i] = [BASES[i >> 4], BASES[i & 0xf]];
+        i += 1;
+    }
+
+    table
+};
+
 pub(super) fn read_sequence(
     src: &mut &[u8],
     sequence: &mut Sequence,
@@ -46,9 +60,7 @@ pub(super) fn read_sequence(
 
     *src = rest;
 
-    let bases = buf
-        .iter()
-        .flat_map(|&b| [decode_base(b >> 4), decode_base(b)]);
+    let bases = buf.iter().flat_map(|&b| NIBBLE_PAIRS[b as usize]);
 
     let dst = sequence.as_mut();
     dst.clear();
@@ -56,28 +68,6 @@ pub(super) fn read_sequence(
     dst.truncate(base_count);
 
     Ok(())
-}
-
-fn decode_base(n: u8) -> u8 {
-    match n & 0x0f {
-        0 => b'=',
-        1 => b'A',
-        2 => b'C',
-        3 => b'M',
-        4 => b'G',
-        5 => b'R',
-        6 => b'S',
-        7 => b'V',
-        8 => b'T',
-        9 => b'W',
-        10 => b'Y',
-        11 => b'H',
-        12 => b'K',
-        13 => b'D',
-        14 => b'B',
-        15 => b'N',
-        _ => unreachable!(),
-    }
 }
 
 fn read_u32_le(src: &mut &[u8]) -> Result<u32, DecodeError> {
@@ -125,22 +115,12 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_base() {
-        assert_eq!(decode_base(0), b'=');
-        assert_eq!(decode_base(1), b'A');
-        assert_eq!(decode_base(2), b'C');
-        assert_eq!(decode_base(3), b'M');
-        assert_eq!(decode_base(4), b'G');
-        assert_eq!(decode_base(5), b'R');
-        assert_eq!(decode_base(6), b'S');
-        assert_eq!(decode_base(7), b'V');
-        assert_eq!(decode_base(8), b'T');
-        assert_eq!(decode_base(9), b'W');
-        assert_eq!(decode_base(10), b'Y');
-        assert_eq!(decode_base(11), b'H');
-        assert_eq!(decode_base(12), b'K');
-        assert_eq!(decode_base(13), b'D');
-        assert_eq!(decode_base(14), b'B');
-        assert_eq!(decode_base(15), b'N');
+    fn test_nibble_pairs() {
+        let expected = *b"=ACMGRSVTWYHKDBN";
+
+        for (code, base) in expected.iter().enumerate() {
+            assert_eq!(NIBBLE_PAIRS[code << 4][0], *base, "high nibble {code}");
+            assert_eq!(NIBBLE_PAIRS[code][1], *base, "low nibble {code}");
+        }
     }
 }
