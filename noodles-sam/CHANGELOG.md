@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+  * sam/alignment/record_buf/convert: Add
+    `RecordBuf::try_clone_from_alignment_record` to clone a
+    `sam::alignment::Record` into an existing `RecordBuf` ([#388]).
+
+[#388]: https://github.com/zaeleus/noodles/issues/388
+
 ### Removed
 
   * sam/alignment/record/sequence: Remove `Sequence::split_at_checked`.
