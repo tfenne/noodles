@@ -5,6 +5,7 @@ pub mod data;
 mod flags;
 pub mod mapping_quality;
 mod quality_scores;
+mod quality_scores_ref;
 mod sequence;
 pub(crate) mod sequence_ref;
 
