@@ -26,7 +26,7 @@ use crate::{
     },
 };
 
-pub use self::sequence_ref::SequenceRef;
+pub use self::{quality_scores_ref::QualityScoresRef, sequence_ref::SequenceRef};
 
 /// An alignment record.
 pub trait Record {
@@ -131,6 +131,11 @@ pub trait Record {
     #[doc(hidden)]
     fn sequence_ref(&self) -> SequenceRef<'_> {
         SequenceRef::Sequence(self.sequence())
+    }
+
+    #[doc(hidden)]
+    fn quality_scores_ref(&self) -> QualityScoresRef<'_> {
+        QualityScoresRef::QualityScores(self.quality_scores())
     }
 }
 
