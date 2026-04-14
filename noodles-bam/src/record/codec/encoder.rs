@@ -137,7 +137,7 @@ where
     write_sequence(dst, read_length, record.sequence_ref())?;
 
     // qual
-    write_quality_scores(dst, base_count, record.quality_scores())?;
+    write_quality_scores(dst, base_count, record.quality_scores_ref())?;
 
     write_data(dst, record.data())?;
 
