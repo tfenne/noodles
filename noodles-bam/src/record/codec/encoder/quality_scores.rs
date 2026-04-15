@@ -15,7 +15,7 @@ pub(super) fn write_quality_scores(
     if quality_scores.len() == base_count {
         match quality_scores {
             QualityScoresRef::Raw(s) => write_raw_quality_scores(dst, s)?,
-            QualityScoresRef::Offset(..) => todo!(),
+            QualityScoresRef::Offset(s, offset) => write_offset_quality_scores(dst, s, offset)?,
             QualityScoresRef::QualityScores(s) => write_generic_quality_scores(dst, s)?,
         }
     } else if quality_scores.is_empty() {
@@ -41,6 +41,22 @@ fn write_raw_quality_scores(dst: &mut Vec<u8>, src: &[u8]) -> io::Result<()> {
     } else {
         Err(io::Error::from(io::ErrorKind::InvalidInput))
     }
+}
+
+fn write_offset_quality_scores(dst: &mut Vec<u8>, src: &[u8], offset: u8) -> io::Result<()> {
+    for n in src {
+        let m = n
+            .checked_sub(offset)
+            .ok_or_else(|| io::Error::from(io::ErrorKind::InvalidInput))?;
+
+        if is_valid_score(m) {
+            dst.push(m);
+        } else {
+            return Err(io::Error::from(io::ErrorKind::InvalidInput));
+        }
+    }
+
+    Ok(())
 }
 
 fn write_generic_quality_scores<S>(dst: &mut Vec<u8>, quality_scores: S) -> io::Result<()>
@@ -125,6 +141,25 @@ mod tests {
         let quality_scores = [255];
         assert!(matches!(
             write_raw_quality_scores(&mut dst, &quality_scores),
+            Err(e) if e.kind() == io::ErrorKind::InvalidInput
+        ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_write_offset_quality_scores() -> io::Result<()> {
+        let mut dst = Vec::new();
+
+        dst.clear();
+        let (quality_scores, offset) = (b"NDLS", b'!');
+        write_offset_quality_scores(&mut dst, quality_scores, offset)?;
+        assert_eq!(dst, [45, 35, 43, 50]);
+
+        dst.clear();
+        let quality_scores = [255];
+        assert!(matches!(
+            write_offset_quality_scores(&mut dst, &quality_scores, offset),
             Err(e) if e.kind() == io::ErrorKind::InvalidInput
         ));
 
