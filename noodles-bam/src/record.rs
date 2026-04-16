@@ -281,6 +281,18 @@ impl sam::alignment::Record for Record {
         Box::new(self.sequence())
     }
 
+    fn sequence_ref(&self) -> sam::alignment::record::SequenceRef<'_> {
+        use sam::alignment::record::sequence_ref::FourBitPacked;
+
+        let record_ref = self.as_record_ref();
+        let base_count = record_ref.base_count();
+
+        sam::alignment::record::SequenceRef::FourBitPacked(FourBitPacked::new(
+            record_ref.sequence(),
+            base_count,
+        ))
+    }
+
     fn quality_scores(&self) -> Box<dyn sam::alignment::record::QualityScores + '_> {
         Box::new(self.quality_scores())
     }
