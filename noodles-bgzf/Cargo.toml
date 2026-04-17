@@ -19,6 +19,7 @@ libdeflate = ["dep:libdeflater"]
 bytes.workspace = true
 crossbeam-channel = "0.5.6"
 flate2.workspace = true
+zlib-rs = "0.6.3"
 
 futures = { workspace = true, optional = true, features = ["std"] }
 pin-project-lite = { workspace = true, optional = true }

@@ -16,12 +16,22 @@ pub(crate) fn decode(src: &[u8], dst: &mut [u8]) -> io::Result<()> {
 
 #[cfg(not(feature = "libdeflate"))]
 pub(crate) fn decode(src: &[u8], dst: &mut [u8]) -> io::Result<()> {
-    use std::io::Read;
+    use zlib_rs::{Inflate, InflateFlush, Status};
 
-    use flate2::bufread::DeflateDecoder;
+    const HAS_ZLIB_HEADER: bool = false;
+    const WINDOW_BITS: u8 = 15;
 
-    let mut decoder = DeflateDecoder::new(src);
-    decoder.read_exact(dst)
+    let mut decoder = Inflate::new(HAS_ZLIB_HEADER, WINDOW_BITS);
+
+    let status = decoder
+        .decompress(src, dst, InflateFlush::Finish)
+        .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+
+    if status == Status::StreamEnd {
+        Ok(())
+    } else {
+        Err(io::Error::from(io::ErrorKind::InvalidData))
+    }
 }
 
 #[cfg(feature = "libdeflate")]
