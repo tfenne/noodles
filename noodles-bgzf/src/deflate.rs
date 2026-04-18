@@ -65,18 +65,31 @@ pub(crate) fn encode(
     compression_level: flate2::Compression,
     dst: &mut Vec<u8>,
 ) -> io::Result<u32> {
-    use std::io::Write;
+    use zlib_rs::{Deflate, DeflateFlush, Status, compress_bound};
 
-    use flate2::write::DeflateEncoder;
+    const HAS_ZLIB_HEADER: bool = false;
+    const WINDOW_BITS: u8 = 15;
 
-    dst.clear();
+    let max_len = compress_bound(src.len());
+    dst.resize(max_len, 0);
 
-    let mut encoder = DeflateEncoder::new(dst, compression_level);
-    encoder.write_all(src)?;
-    encoder.finish()?;
+    let mut encoder = Deflate::new(
+        compression_level.level() as i32,
+        HAS_ZLIB_HEADER,
+        WINDOW_BITS,
+    );
 
-    let mut crc = Crc::new();
-    crc.update(src);
+    let status = encoder
+        .compress(src, dst, DeflateFlush::Finish)
+        .map_err(|_| io::Error::from(io::ErrorKind::InvalidInput))?;
 
-    Ok(crc.sum())
+    if status == Status::StreamEnd {
+        dst.truncate(encoder.total_out() as usize);
+
+        let mut crc = Crc::new();
+        crc.update(src);
+        Ok(crc.sum())
+    } else {
+        Err(io::Error::from(io::ErrorKind::InvalidInput))
+    }
 }
