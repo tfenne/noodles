@@ -1,7 +1,5 @@
 use std::io;
 
-use flate2::Crc;
-
 #[cfg(feature = "libdeflate")]
 pub(crate) fn decode(src: &[u8], dst: &mut [u8]) -> io::Result<()> {
     use libdeflater::Decompressor;
@@ -53,10 +51,7 @@ pub(crate) fn encode(
 
     dst.truncate(len);
 
-    let mut crc = Crc::new();
-    crc.update(src);
-
-    Ok(crc.sum())
+    Ok(crc32(src))
 }
 
 #[cfg(not(feature = "libdeflate"))]
@@ -85,11 +80,14 @@ pub(crate) fn encode(
 
     if status == Status::StreamEnd {
         dst.truncate(encoder.total_out() as usize);
-
-        let mut crc = Crc::new();
-        crc.update(src);
-        Ok(crc.sum())
+        Ok(crc32(src))
     } else {
         Err(io::Error::from(io::ErrorKind::InvalidInput))
     }
+}
+
+pub(crate) fn crc32(src: &[u8]) -> u32 {
+    const START: u32 = 0;
+
+    zlib_rs::crc32::crc32(START, src)
 }
