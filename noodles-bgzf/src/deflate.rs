@@ -55,11 +55,7 @@ pub(crate) fn encode(
 }
 
 #[cfg(not(feature = "libdeflate"))]
-pub(crate) fn encode(
-    src: &[u8],
-    compression_level: flate2::Compression,
-    dst: &mut Vec<u8>,
-) -> io::Result<u32> {
+pub(crate) fn encode(src: &[u8], compression_level: i32, dst: &mut Vec<u8>) -> io::Result<u32> {
     use zlib_rs::{Deflate, DeflateFlush, Status, compress_bound};
 
     const HAS_ZLIB_HEADER: bool = false;
@@ -68,11 +64,7 @@ pub(crate) fn encode(
     let max_len = compress_bound(src.len());
     dst.resize(max_len, 0);
 
-    let mut encoder = Deflate::new(
-        compression_level.level() as i32,
-        HAS_ZLIB_HEADER,
-        WINDOW_BITS,
-    );
+    let mut encoder = Deflate::new(compression_level, HAS_ZLIB_HEADER, WINDOW_BITS);
 
     let status = encoder
         .compress(src, dst, DeflateFlush::Finish)

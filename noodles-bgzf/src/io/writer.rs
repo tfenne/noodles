@@ -44,7 +44,7 @@ pub(crate) const BGZF_EOF: [u8; 28] = [
 #[cfg(feature = "libdeflate")]
 pub(crate) type CompressionLevelImpl = libdeflater::CompressionLvl;
 #[cfg(not(feature = "libdeflate"))]
-pub(crate) type CompressionLevelImpl = flate2::Compression;
+pub(crate) type CompressionLevelImpl = i32;
 
 /// A BZGF writer.
 ///
