@@ -83,3 +83,14 @@ pub(crate) fn crc32(src: &[u8]) -> u32 {
 
     zlib_rs::crc32::crc32(START, src)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_crc32() {
+        assert_eq!(crc32(b""), 0x00000000);
+        assert_eq!(crc32(b"noodles"), 0x802a58a1);
+    }
+}
