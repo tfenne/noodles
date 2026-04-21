@@ -16,73 +16,83 @@ const MATE_REFERENCE_SEQUENCE_ID_RANGE: Range<usize> = 20..24;
 const MATE_ALIGNMENT_START_RANGE: Range<usize> = 24..28;
 const TEMPLATE_LENGTH_RANGE: Range<usize> = 28..32;
 
-pub struct RecordRef<'a>(&'a [u8]);
+const HEAD_SIZE: usize = TEMPLATE_LENGTH_RANGE.end;
+
+pub struct RecordRef<'a> {
+    head: &'a [u8; HEAD_SIZE],
+    rest: &'a [u8],
+}
 
 impl<'a> RecordRef<'a> {
     pub(crate) fn new_unchecked(src: &'a [u8]) -> Self {
-        Self(src)
+        let (head, rest) = src.split_at(HEAD_SIZE);
+
+        Self {
+            head: head.try_into().unwrap(),
+            rest,
+        }
     }
 
     pub fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
-        // SAFETY: `self.0.len() >= mem::size_of::<i32>()`.
-        let src = self.0.first_chunk().unwrap();
+        // SAFETY: `self.head.len() >= mem::size_of::<i32>()`.
+        let src = self.head.first_chunk().unwrap();
         get_reference_sequence_id(*src).map(try_to_reference_sequence_id)
     }
 
     pub fn alignment_start(&self) -> Option<io::Result<Position>> {
-        let src = &self.0[ALIGNMENT_START_RANGE];
+        let src = &self.head[ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
     }
 
     fn name_length(&self) -> usize {
-        let n = &self.0[NAME_LENGTH_INDEX];
+        let n = &self.head[NAME_LENGTH_INDEX];
         usize::from(*n)
     }
 
     pub fn mapping_quality(&self) -> Option<u8> {
         const MISSING: u8 = 255;
 
-        match self.0[MAPPING_QUALITY_INDEX] {
+        match self.head[MAPPING_QUALITY_INDEX] {
             MISSING => None,
             n => Some(n),
         }
     }
 
     fn cigar_op_count(&self) -> usize {
-        let src = &self.0[CIGAR_OP_COUNT_RANGE];
+        let src = &self.head[CIGAR_OP_COUNT_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u16>()`.
         usize::from(u16::from_le_bytes(src.try_into().unwrap()))
     }
 
     pub fn flags(&self) -> Flags {
-        let src = &self.0[FLAGS_RANGE];
+        let src = &self.head[FLAGS_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u16>()`.
         let n = u16::from_le_bytes(src.try_into().unwrap());
         Flags::from(n)
     }
 
     pub(crate) fn base_count(&self) -> usize {
-        let src = &self.0[READ_LENGTH_RANGE];
+        let src = &self.head[READ_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u32>()`.
         let n = u32::from_le_bytes(src.try_into().unwrap());
         usize::try_from(n).unwrap()
     }
 
     pub fn mate_reference_sequence_id(&self) -> Option<io::Result<usize>> {
-        let src = &self.0[MATE_REFERENCE_SEQUENCE_ID_RANGE];
+        let src = &self.head[MATE_REFERENCE_SEQUENCE_ID_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_reference_sequence_id(src.try_into().unwrap()).map(try_to_reference_sequence_id)
     }
 
     pub fn mate_alignment_start(&self) -> Option<io::Result<Position>> {
-        let src = &self.0[MATE_ALIGNMENT_START_RANGE];
+        let src = &self.head[MATE_ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
     }
 
     pub fn template_length(&self) -> i32 {
-        let src = &self.0[TEMPLATE_LENGTH_RANGE];
+        let src = &self.head[TEMPLATE_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         i32::from_le_bytes(src.try_into().unwrap())
     }
@@ -91,11 +101,9 @@ impl<'a> RecordRef<'a> {
         const NUL: u8 = 0x00;
         const MISSING: &[u8] = &[b'*', NUL];
 
-        let read_name_len = self.name_length();
-        let start = TEMPLATE_LENGTH_RANGE.end;
-        let end = start + read_name_len;
+        let end = self.name_length();
 
-        match &self.0[start..end] {
+        match &self.rest[..end] {
             MISSING => None,
             buf => Some(buf.strip_suffix(&[NUL]).unwrap_or(buf).as_bstr()),
         }
@@ -112,9 +120,9 @@ impl<'a> RecordRef<'a> {
             ((n & 0x0f) as u8, usize::try_from(n >> 4).unwrap())
         }
 
-        let start = TEMPLATE_LENGTH_RANGE.end + self.name_length();
+        let start = self.name_length();
         let end = start + (self.cigar_op_count() * mem::size_of::<u32>());
-        let src = &self.0[start..end];
+        let src = &self.rest[start..end];
 
         if let ([chunk_0, chunk_1], []) = src.as_chunks() {
             let k = self.base_count();
@@ -135,14 +143,12 @@ impl<'a> RecordRef<'a> {
     }
 
     pub fn sequence(&self) -> &'a [u8] {
-        let start = TEMPLATE_LENGTH_RANGE.end
-            + self.name_length()
-            + (self.cigar_op_count() * mem::size_of::<u32>());
+        let start = self.name_length() + (self.cigar_op_count() * mem::size_of::<u32>());
 
         let sequence_len = self.base_count().div_ceil(2);
         let end = start + sequence_len;
 
-        &self.0[start..end]
+        &self.rest[start..end]
     }
 
     pub fn quality_scores(&self) -> &'a [u8] {
@@ -150,14 +156,13 @@ impl<'a> RecordRef<'a> {
 
         let base_count = self.base_count();
 
-        let start = TEMPLATE_LENGTH_RANGE.end
-            + self.name_length()
+        let start = self.name_length()
             + (self.cigar_op_count() * mem::size_of::<u32>())
             + base_count.div_ceil(2);
 
         let end = start + base_count;
 
-        let src = &self.0[start..end];
+        let src = &self.rest[start..end];
 
         // § 4.2.3 "SEQ and QUAL encoding" (2024-11-06): "When base quality are omitted but the
         // sequence is not, `qual` is filled with `0xFF` bytes (to length `l_seq`)."
@@ -171,13 +176,12 @@ impl<'a> RecordRef<'a> {
     pub fn data(&self) -> &'a [u8] {
         let base_count = self.base_count();
 
-        let start = TEMPLATE_LENGTH_RANGE.end
-            + self.name_length()
+        let start = self.name_length()
             + (self.cigar_op_count() * mem::size_of::<u32>())
             + base_count.div_ceil(2)
             + base_count;
 
-        &self.0[start..]
+        &self.rest[start..]
     }
 }
 
@@ -223,7 +227,7 @@ mod tests {
             b'N', b'D', b'L', b'S', // quality scores
         ];
 
-        let record = RecordRef(SRC);
+        let record = RecordRef::new_unchecked(SRC);
 
         assert!(record.reference_sequence_id().transpose()?.is_none());
         assert!(record.alignment_start().transpose()?.is_none());
@@ -261,7 +265,7 @@ mod tests {
             b'N', b'D', b'L', b'S', // quality scores
         ];
 
-        let record = RecordRef(SRC);
+        let record = RecordRef::new_unchecked(SRC);
         assert_eq!(record.name(), Some(b"r0".as_bstr()));
 
         Ok(())
@@ -287,7 +291,7 @@ mod tests {
             b'N', b'D', b'L', b'S', // quality scores
         ];
 
-        let record = RecordRef(SRC);
+        let record = RecordRef::new_unchecked(SRC);
 
         assert_eq!(
             record.cigar(),
@@ -319,7 +323,7 @@ mod tests {
             0x00, // data["CG"] = [4M]
         ];
 
-        let record = RecordRef(SRC);
+        let record = RecordRef::new_unchecked(SRC);
         assert_eq!(record.cigar(), [0x40, 0x00, 0x00, 0x00]);
 
         Ok(())
@@ -345,7 +349,7 @@ mod tests {
             0xff, 0xff, 0xff, 0xff, // quality scores
         ];
 
-        let record = RecordRef(SRC);
+        let record = RecordRef::new_unchecked(SRC);
         assert!(record.quality_scores().is_empty());
 
         Ok(())
