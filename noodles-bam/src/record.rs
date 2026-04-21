@@ -189,7 +189,8 @@ impl Record {
     }
 
     fn as_record_ref(&self) -> RecordRef<'_> {
-        RecordRef::new(&self.0)
+        // SAFETY: The inner buffer was validated to look record-like on read.
+        RecordRef::new_unchecked(&self.0)
     }
 }
 

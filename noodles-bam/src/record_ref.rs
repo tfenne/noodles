@@ -19,7 +19,7 @@ const TEMPLATE_LENGTH_RANGE: Range<usize> = 28..32;
 pub struct RecordRef<'a>(&'a [u8]);
 
 impl<'a> RecordRef<'a> {
-    pub fn new(src: &'a [u8]) -> Self {
+    pub(crate) fn new_unchecked(src: &'a [u8]) -> Self {
         Self(src)
     }
 
