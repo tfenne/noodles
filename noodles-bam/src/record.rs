@@ -61,9 +61,7 @@ impl Record {
     /// assert!(record.mapping_quality().is_none());
     /// ```
     pub fn mapping_quality(&self) -> Option<MappingQuality> {
-        self.as_record_ref()
-            .mapping_quality()
-            .and_then(MappingQuality::new)
+        self.as_record_ref().mapping_quality()
     }
 
     /// Returns the flags.

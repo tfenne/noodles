@@ -2,7 +2,7 @@ use std::{io, mem, ops::Range};
 
 use bstr::{BStr, ByteSlice};
 use noodles_core::Position;
-use noodles_sam::alignment::record::Flags;
+use noodles_sam::alignment::record::{Flags, MappingQuality};
 
 use super::record::{try_to_position, try_to_reference_sequence_id};
 
@@ -50,13 +50,9 @@ impl<'a> RecordRef<'a> {
         usize::from(*n)
     }
 
-    pub fn mapping_quality(&self) -> Option<u8> {
-        const MISSING: u8 = 255;
-
-        match self.head[MAPPING_QUALITY_INDEX] {
-            MISSING => None,
-            n => Some(n),
-        }
+    pub fn mapping_quality(&self) -> Option<MappingQuality> {
+        let n = self.head[MAPPING_QUALITY_INDEX];
+        MappingQuality::new(n)
     }
 
     fn cigar_op_count(&self) -> usize {
