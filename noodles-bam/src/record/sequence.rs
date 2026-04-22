@@ -16,7 +16,7 @@ pub struct Sequence<'a> {
 }
 
 impl<'a> Sequence<'a> {
-    pub(super) fn new(src: &'a [u8], base_count: usize) -> Self {
+    pub(crate) fn new(src: &'a [u8], base_count: usize) -> Self {
         Self { src, base_count }
     }
 

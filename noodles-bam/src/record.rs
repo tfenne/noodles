@@ -155,9 +155,7 @@ impl Record {
     /// assert!(record.sequence().is_empty());
     /// ```
     pub fn sequence(&self) -> Sequence<'_> {
-        let record_ref = self.as_record_ref();
-        let base_count = record_ref.base_count();
-        Sequence::new(record_ref.sequence(), base_count)
+        self.as_record_ref().sequence()
     }
 
     /// Returns the quality scores.
@@ -284,12 +282,8 @@ impl sam::alignment::Record for Record {
         use sam::alignment::record::sequence_ref::FourBitPacked;
 
         let record_ref = self.as_record_ref();
-        let base_count = record_ref.base_count();
-
-        sam::alignment::record::SequenceRef::FourBitPacked(FourBitPacked::new(
-            record_ref.sequence(),
-            base_count,
-        ))
+        let (src, base_count) = record_ref.raw_sequence();
+        sam::alignment::record::SequenceRef::FourBitPacked(FourBitPacked::new(src, base_count))
     }
 
     fn quality_scores(&self) -> Box<dyn sam::alignment::record::QualityScores + '_> {

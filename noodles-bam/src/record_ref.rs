@@ -4,7 +4,7 @@ use bstr::{BStr, ByteSlice};
 use noodles_core::Position;
 use noodles_sam::alignment::record::{Flags, MappingQuality};
 
-use super::record::{Cigar, try_to_position, try_to_reference_sequence_id};
+use super::record::{Cigar, Sequence, try_to_position, try_to_reference_sequence_id};
 
 const ALIGNMENT_START_RANGE: Range<usize> = 4..8;
 const NAME_LENGTH_INDEX: usize = 8;
@@ -138,13 +138,19 @@ impl<'a> RecordRef<'a> {
         Cigar::new(src)
     }
 
-    pub fn sequence(&self) -> &'a [u8] {
+    pub fn sequence(&self) -> Sequence<'a> {
+        let (src, base_count) = self.raw_sequence();
+        Sequence::new(src, base_count)
+    }
+
+    pub(crate) fn raw_sequence(&self) -> (&'a [u8], usize) {
         let start = self.name_length() + (self.cigar_op_count() * mem::size_of::<u32>());
 
-        let sequence_len = self.base_count().div_ceil(2);
+        let base_count = self.base_count();
+        let sequence_len = base_count.div_ceil(2);
         let end = start + sequence_len;
 
-        &self.rest[start..end]
+        (&self.rest[start..end], base_count)
     }
 
     pub fn quality_scores(&self) -> &'a [u8] {
@@ -234,7 +240,7 @@ mod tests {
         assert_eq!(record.template_length(), 0);
         assert!(record.name().is_none());
         assert_eq!(record.cigar().as_ref(), [0x40, 0x00, 0x00, 0x00]);
-        assert_eq!(record.sequence(), &[0x12, 0x48]);
+        assert_eq!(record.sequence().as_ref(), &[0x12, 0x48]);
         assert_eq!(record.quality_scores(), b"NDLS");
         assert!(record.data().is_empty());
 
