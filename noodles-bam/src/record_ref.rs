@@ -4,7 +4,7 @@ use bstr::{BStr, ByteSlice};
 use noodles_core::Position;
 use noodles_sam::alignment::record::{Flags, MappingQuality};
 
-use super::record::{try_to_position, try_to_reference_sequence_id};
+use super::record::{Cigar, try_to_position, try_to_reference_sequence_id};
 
 const ALIGNMENT_START_RANGE: Range<usize> = 4..8;
 const NAME_LENGTH_INDEX: usize = 8;
@@ -105,7 +105,7 @@ impl<'a> RecordRef<'a> {
         }
     }
 
-    pub fn cigar(&self) -> &'a [u8] {
+    pub fn cigar(&self) -> Cigar<'a> {
         use crate::record::data::get_raw_cigar;
 
         const SKIP: u8 = 3;
@@ -130,12 +130,12 @@ impl<'a> RecordRef<'a> {
                 let mut data_src = self.data();
 
                 if let Ok(Some(buf)) = get_raw_cigar(&mut data_src) {
-                    return buf;
+                    return Cigar::new(buf);
                 }
             }
         }
 
-        src
+        Cigar::new(src)
     }
 
     pub fn sequence(&self) -> &'a [u8] {
@@ -233,7 +233,7 @@ mod tests {
         assert!(record.mate_alignment_start().transpose()?.is_none());
         assert_eq!(record.template_length(), 0);
         assert!(record.name().is_none());
-        assert_eq!(record.cigar(), [0x40, 0x00, 0x00, 0x00]);
+        assert_eq!(record.cigar().as_ref(), [0x40, 0x00, 0x00, 0x00]);
         assert_eq!(record.sequence(), &[0x12, 0x48]);
         assert_eq!(record.quality_scores(), b"NDLS");
         assert!(record.data().is_empty());
@@ -290,7 +290,7 @@ mod tests {
         let record = RecordRef::new_unchecked(SRC);
 
         assert_eq!(
-            record.cigar(),
+            record.cigar().as_ref(),
             [0x20, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00]
         );
 
@@ -320,7 +320,7 @@ mod tests {
         ];
 
         let record = RecordRef::new_unchecked(SRC);
-        assert_eq!(record.cigar(), [0x40, 0x00, 0x00, 0x00]);
+        assert_eq!(record.cigar().as_ref(), [0x40, 0x00, 0x00, 0x00]);
 
         Ok(())
     }

@@ -142,7 +142,7 @@ impl Record {
     /// assert!(record.cigar().is_empty());
     /// ```
     pub fn cigar(&self) -> Cigar<'_> {
-        Cigar::new(self.as_record_ref().cigar())
+        self.as_record_ref().cigar()
     }
 
     /// Returns the sequence.

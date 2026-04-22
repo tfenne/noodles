@@ -9,7 +9,7 @@ const CHUNK_SIZE: usize = mem::size_of::<u32>();
 pub struct Cigar<'a>(&'a [u8]);
 
 impl<'a> Cigar<'a> {
-    pub(super) fn new(src: &'a [u8]) -> Self {
+    pub(crate) fn new(src: &'a [u8]) -> Self {
         Self(src)
     }
 
