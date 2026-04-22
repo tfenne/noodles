@@ -168,7 +168,7 @@ impl Record {
     /// assert!(record.quality_scores().is_empty());
     /// ```
     pub fn quality_scores(&self) -> QualityScores<'_> {
-        QualityScores::new(self.as_record_ref().quality_scores())
+        self.as_record_ref().quality_scores()
     }
 
     /// Returns the data.
@@ -291,7 +291,8 @@ impl sam::alignment::Record for Record {
     }
 
     fn quality_scores_ref(&self) -> sam::alignment::record::QualityScoresRef<'_> {
-        sam::alignment::record::QualityScoresRef::Raw(self.as_record_ref().quality_scores())
+        let record_ref = self.as_record_ref();
+        sam::alignment::record::QualityScoresRef::Raw(record_ref.raw_quality_scores())
     }
 
     fn data(&self) -> Box<dyn sam::alignment::record::Data + '_> {

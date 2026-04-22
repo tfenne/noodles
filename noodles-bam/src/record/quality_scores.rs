@@ -7,7 +7,7 @@ use noodles_sam as sam;
 pub struct QualityScores<'a>(&'a [u8]);
 
 impl<'a> QualityScores<'a> {
-    pub(super) fn new(src: &'a [u8]) -> Self {
+    pub(crate) fn new(src: &'a [u8]) -> Self {
         Self(src)
     }
 
