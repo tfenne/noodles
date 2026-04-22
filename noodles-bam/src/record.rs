@@ -181,7 +181,7 @@ impl Record {
     /// assert!(record.data().is_empty());
     /// ```
     pub fn data(&self) -> Data<'_> {
-        Data::new(self.as_record_ref().data())
+        self.as_record_ref().data()
     }
 
     fn as_record_ref(&self) -> RecordRef<'_> {

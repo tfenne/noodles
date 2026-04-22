@@ -15,7 +15,7 @@ use self::field::decode_field;
 pub struct Data<'r>(&'r [u8]);
 
 impl<'r> Data<'r> {
-    pub(super) fn new(src: &'r [u8]) -> Self {
+    pub(crate) fn new(src: &'r [u8]) -> Self {
         Self(src)
     }
 

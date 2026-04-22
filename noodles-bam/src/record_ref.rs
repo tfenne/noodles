@@ -5,7 +5,7 @@ use noodles_core::Position;
 use noodles_sam::alignment::record::{Flags, MappingQuality};
 
 use super::record::{
-    Cigar, QualityScores, Sequence, try_to_position, try_to_reference_sequence_id,
+    Cigar, Data, QualityScores, Sequence, try_to_position, try_to_reference_sequence_id,
 };
 
 const ALIGNMENT_START_RANGE: Range<usize> = 4..8;
@@ -129,7 +129,7 @@ impl<'a> RecordRef<'a> {
             let op_2 = decode_op(chunk_1);
 
             if op_1 == (SOFT_CLIP, k) && matches!(op_2, (SKIP, _)) {
-                let mut data_src = self.data();
+                let mut data_src = self.raw_data();
 
                 if let Ok(Some(buf)) = get_raw_cigar(&mut data_src) {
                     return Cigar::new(buf);
@@ -181,7 +181,11 @@ impl<'a> RecordRef<'a> {
         }
     }
 
-    pub fn data(&self) -> &'a [u8] {
+    pub fn data(&self) -> Data<'a> {
+        Data::new(self.raw_data())
+    }
+
+    pub fn raw_data(&self) -> &'a [u8] {
         let base_count = self.base_count();
 
         let start = self.name_length()
