@@ -20,6 +20,7 @@ const TEMPLATE_LENGTH_RANGE: Range<usize> = 28..32;
 
 const HEAD_SIZE: usize = TEMPLATE_LENGTH_RANGE.end;
 
+/// An immutable view over a BAM record.
 pub struct RecordRef<'a> {
     head: &'a [u8; HEAD_SIZE],
     rest: &'a [u8],
@@ -35,12 +36,14 @@ impl<'a> RecordRef<'a> {
         }
     }
 
+    /// Returns the reference sequence ID.
     pub fn reference_sequence_id(&self) -> Option<io::Result<usize>> {
         // SAFETY: `self.head.len() >= mem::size_of::<i32>()`.
         let src = self.head.first_chunk().unwrap();
         get_reference_sequence_id(*src).map(try_to_reference_sequence_id)
     }
 
+    /// Returns the alignment start.
     pub fn alignment_start(&self) -> Option<io::Result<Position>> {
         let src = &self.head[ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
@@ -52,6 +55,7 @@ impl<'a> RecordRef<'a> {
         usize::from(*n)
     }
 
+    /// Returns the mapping quality.
     pub fn mapping_quality(&self) -> Option<MappingQuality> {
         let n = self.head[MAPPING_QUALITY_INDEX];
         MappingQuality::new(n)
@@ -63,6 +67,7 @@ impl<'a> RecordRef<'a> {
         usize::from(u16::from_le_bytes(src.try_into().unwrap()))
     }
 
+    /// Returns the flags.
     pub fn flags(&self) -> Flags {
         let src = &self.head[FLAGS_RANGE];
         // SAFETY: `src.len() == mem::size_of::<u16>()`.
@@ -77,24 +82,28 @@ impl<'a> RecordRef<'a> {
         usize::try_from(n).unwrap()
     }
 
+    /// Returns the mate reference sequence ID.
     pub fn mate_reference_sequence_id(&self) -> Option<io::Result<usize>> {
         let src = &self.head[MATE_REFERENCE_SEQUENCE_ID_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_reference_sequence_id(src.try_into().unwrap()).map(try_to_reference_sequence_id)
     }
 
+    /// Returns the mate alignment start.
     pub fn mate_alignment_start(&self) -> Option<io::Result<Position>> {
         let src = &self.head[MATE_ALIGNMENT_START_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         get_position(src.try_into().unwrap()).map(try_to_position)
     }
 
+    /// Returns the template length.
     pub fn template_length(&self) -> i32 {
         let src = &self.head[TEMPLATE_LENGTH_RANGE];
         // SAFETY: `src.len() == mem::size_of::<i32>()`.
         i32::from_le_bytes(src.try_into().unwrap())
     }
 
+    /// Returns the read name.
     pub fn name(&self) -> Option<&'a BStr> {
         const NUL: u8 = 0x00;
         const MISSING: &[u8] = &[b'*', NUL];
@@ -107,6 +116,7 @@ impl<'a> RecordRef<'a> {
         }
     }
 
+    /// Returns the CIGAR operations.
     pub fn cigar(&self) -> Cigar<'a> {
         use crate::record::data::get_raw_cigar;
 
@@ -140,6 +150,7 @@ impl<'a> RecordRef<'a> {
         Cigar::new(src)
     }
 
+    /// Returns the sequence.
     pub fn sequence(&self) -> Sequence<'a> {
         let (src, base_count) = self.raw_sequence();
         Sequence::new(src, base_count)
@@ -155,6 +166,7 @@ impl<'a> RecordRef<'a> {
         (&self.rest[start..end], base_count)
     }
 
+    /// Returns the quality scores.
     pub fn quality_scores(&self) -> QualityScores<'a> {
         QualityScores::new(self.raw_quality_scores())
     }
@@ -181,11 +193,12 @@ impl<'a> RecordRef<'a> {
         }
     }
 
+    /// Returns the data.
     pub fn data(&self) -> Data<'a> {
         Data::new(self.raw_data())
     }
 
-    pub fn raw_data(&self) -> &'a [u8] {
+    fn raw_data(&self) -> &'a [u8] {
         let base_count = self.base_count();
 
         let start = self.name_length()
