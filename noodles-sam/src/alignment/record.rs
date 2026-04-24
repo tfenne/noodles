@@ -27,7 +27,9 @@ use crate::{
     },
 };
 
-pub use self::{quality_scores_ref::QualityScoresRef, sequence_ref::SequenceRef};
+pub use self::{
+    cigar_ref::CigarRef, quality_scores_ref::QualityScoresRef, sequence_ref::SequenceRef,
+};
 
 /// An alignment record.
 pub trait Record {
@@ -127,6 +129,11 @@ pub trait Record {
             Some(Err(e)) => Some(Err(e)),
             None => Some(Ok(start)),
         }
+    }
+
+    #[doc(hidden)]
+    fn cigar_ref(&self) -> CigarRef<'_> {
+        CigarRef::Cigar(self.cigar())
     }
 
     #[doc(hidden)]
